@@ -1,0 +1,265 @@
+@import "tailwindcss";
+
+:root {
+  /* Ivory/Light Theme */
+  --background: #fdfbf7;
+  /* Warm ivory/off-white */
+  --foreground: #1e293b;
+  /* Slate 800 - Soft Black */
+
+  --card-bg: rgba(255, 255, 255, 0.7);
+  /* Translucent white */
+  --card-border: rgba(203, 213, 225, 0.6);
+  /* Slate 300 */
+
+  --accent-primary: #0ea5e9;
+  /* Sky 500 */
+  --accent-secondary: #6366f1;
+  /* Indigo 500 */
+
+  /* Slightly less blur for cleaner light look */
+  --glass-effect: blur(16px) saturate(180%);
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  /* Subtle mesh gradient for light mode */
+  background-image:
+    radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.05) 0px, transparent 50%);
+  background-attachment: fixed;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+/* Scrollbar - Darker thumb for light mode */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.5);
+  /* Slate 400 */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.7);
+}
+
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 1.5rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  gap: 1.5rem;
+}
+
+.dashboard-header {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  /* Darker gradient text */
+  background: linear-gradient(to right, #0284c7, #4f46e5);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-transform: uppercase;
+}
+
+.dashboard-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr 1fr 1fr 1fr;
+  /* Mobile stack */
+  gap: 1.5rem;
+  min-height: 0;
+}
+
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+    /* Top row 1fr (Schedule/Todo), Bottom row 1.3fr (News/LH) */
+    grid-template-rows: 1fr 1.3fr;
+  }
+}
+
+.glass-card {
+  background: var(--card-bg);
+  backdrop-filter: var(--glass-effect);
+  -webkit-backdrop-filter: var(--glass-effect);
+  border: 1px solid var(--card-border);
+  border-radius: 1rem;
+  padding: 1.25rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+  /* Softer shadow */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  /* Ensure calendar iframe is contained */
+}
+
+.glass-card:hover {
+  border-color: #94a3b8;
+  /* Slate 400 */
+}
+
+.card-header {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  /* Very light dark border */
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #334155;
+  /* Slate 700 */
+}
+
+.card-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 0.5rem;
+}
+
+/* News Item Styling - Light Mode */
+.news-item {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  line-height: 1.5;
+}
+
+.news-item:last-child {
+  border-bottom: none;
+}
+
+.news-link {
+  color: #334155;
+  /* Slate 700 */
+  text-decoration: none;
+  font-size: 0.95rem;
+  font-weight: 500;
+  display: block;
+  transition: color 0.15s;
+}
+
+.news-link:hover {
+  color: var(--accent-primary);
+}
+
+.news-meta {
+  font-size: 0.75rem;
+  color: #64748b;
+  /* Slate 500 */
+  margin-top: 0.25rem;
+  display: block;
+}
+
+/* LH Table - Light Mode */
+.lh-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.lh-table th {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  color: #64748b;
+  /* Slate 500 */
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lh-table td {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  vertical-align: middle;
+  color: #334155;
+}
+
+.lh-title-cell {
+  max-width: 0;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lh-table a {
+  color: #334155;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.lh-table a:hover {
+  color: var(--accent-primary);
+  text-decoration: underline;
+}
+
+/* Todo Styling - Light Mode */
+.todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.5);
+  /* Slightly visible item bg */
+  border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.todo-checkbox {
+  margin-right: 0.75rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.todo-title {
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #334155;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.todo-time {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-left: 1rem;
+  white-space: nowrap;
+  font-weight: 500;
+}
