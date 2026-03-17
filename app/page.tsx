@@ -136,7 +136,7 @@ export default function Home() {
   return (
     <main className="dashboard-container relative">
       <header className="dashboard-header">
-        <h1 className="dashboard-title">JY BOARD</h1>
+        <h1 className="dashboard-title">WELLASSET BOARD</h1>
       </header>
 
       <div className="dashboard-grid">
