@@ -84,17 +84,28 @@ body {
   flex: 1;
   display: grid;
   grid-template-columns: 1fr;
-  grid-template-rows: 1fr 1fr 1fr 1fr;
-  /* Mobile stack */
+  grid-template-rows: auto;
   gap: 1.5rem;
   min-height: 0;
 }
 
 @media (min-width: 1024px) {
   .dashboard-grid {
-    grid-template-columns: 1fr 1fr;
-    /* Top row 1fr (Schedule/Todo), Bottom row 1.3fr (News/LH) */
-    grid-template-rows: 1fr 1.3fr;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: 1.2fr 1fr;
+  }
+  
+  .glass-card:nth-child(1) { /* Schedule */
+    grid-column: span 1;
+  }
+  .glass-card:nth-child(2) { /* Todos */
+    grid-column: span 3;
+  }
+  .glass-card:nth-child(3) { /* News */
+    grid-column: span 2;
+  }
+  .glass-card:nth-child(4) { /* LH */
+    grid-column: span 2;
   }
 }
 
