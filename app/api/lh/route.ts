@@ -47,10 +47,19 @@ export async function GET() {
                 // State is typically in the first or second cell, looking for specific keywords
                 const state = $(cells).eq(0).text().trim() || $(cells).eq(1).text().trim();
 
+                let finalLink = link;
+                if (link === '#') {
+                    finalLink = 'https://apply.lh.or.kr/lhapply/apply/pch/list.do?mi=1076';
+                } else if (link.startsWith('/')) {
+                    finalLink = `https://apply.lh.or.kr${link}`;
+                } else if (link.toLowerCase().startsWith('javascript:')) {
+                    finalLink = 'https://apply.lh.or.kr/lhapply/apply/pch/list.do?mi=1076';
+                }
+
                 if (title) {
                     notices.push({
                         title,
-                        link: link.startsWith('/') ? `https://apply.lh.or.kr${link}` : link,
+                        link: finalLink,
                         noticeDate,
                         deadline,
                         state
