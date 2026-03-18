@@ -361,10 +361,18 @@ export default function Home() {
       {/* Weekly View Modal */}
       {showWeekly && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-[#fcfbf7] w-full max-w-[98%] h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/50 ring-1 ring-black/5">
-            <div className="p-6 border-b border-black/5 flex justify-between items-center bg-white/60 backdrop-blur-md">
-              <h2 className="text-2xl font-bold text-slate-700 tracking-tight">주간 일정</h2>
-              <button onClick={() => setShowWeekly(false)} className="text-slate-400 hover:text-slate-800 text-3xl transition-colors leading-none">&times;</button>
+          <div className="bg-[#fcfbf7] w-full max-w-[98%] h-[72vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/50 ring-1 ring-black/5">
+            <div className="p-6 border-b border-black/5 flex flex-col gap-4 bg-white/60 backdrop-blur-md">
+              <div className="flex justify-between items-center w-full">
+                <h2 className="text-2xl font-bold text-slate-700 tracking-tight">주간 일정</h2>
+                <button onClick={() => setShowWeekly(false)} className="text-slate-400 hover:text-slate-800 text-3xl transition-colors leading-none">&times;</button>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => openTrelloPopup('https://trello.com/b/zHDWraQl')} className="trello-shortcut-btn">동천동</button>
+                <button onClick={() => openTrelloPopup('https://trello.com/b/yFCQoAY5')} className="trello-shortcut-btn">기타</button>
+                <button onClick={() => openTrelloPopup('https://trello.com/b/XOH8XjzB')} className="trello-shortcut-btn">준비</button>
+                <button onClick={() => openTrelloPopup('https://trello.com/b/p4hR5CFc')} className="trello-shortcut-btn">법인</button>
+              </div>
             </div>
             <div className="flex-1 overflow-auto p-6 bg-[#f6f5f0]">
               <div className="grid grid-cols-7 gap-4 h-full min-w-[1200px]">
