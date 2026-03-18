@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowRight, ArrowLeft } from 'lucide-react';
 
 export default function Home() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const [news, setNews] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
   const [todos, setTodos] = useState<any[]>([]);
@@ -133,11 +136,38 @@ export default function Home() {
     return `${dates[d.getDay()]} (${d.getMonth() + 1}/${d.getDate()})`;
   };
 
+  const scrollToPanel = (index: number) => {
+    if (containerRef.current) {
+      const panelWidth = containerRef.current.clientWidth;
+      containerRef.current.scrollTo({
+        left: panelWidth * index,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
-    <main className="dashboard-container relative">
-      <header className="dashboard-header">
-        <h1 className="dashboard-title">WELLASSET BOARD</h1>
-      </header>
+    <div 
+      ref={containerRef}
+      className="w-screen h-screen overflow-x-auto overflow-y-hidden snap-x snap-mandatory flex custom-scrollbar-hide"
+      style={{ scrollBehavior: 'smooth' }}
+    >
+      {/* =========================================
+          PANEL 1: MAIN DASHBOARD 
+          ========================================= */}
+      <section className="w-screen h-screen flex-shrink-0 snap-center relative">
+        <main className="dashboard-container relative h-full">
+          <header className="dashboard-header flex justify-between items-center px-4">
+            <div className="w-24"></div> {/* Spacer for centering */}
+            <h1 className="dashboard-title m-0">WELLASSET BOARD</h1>
+            <button 
+              onClick={() => scrollToPanel(1)}
+              className="group flex items-center gap-2 px-4 py-2 bg-white/50 hover:bg-white/80 border border-slate-200 rounded-full shadow-sm backdrop-blur-md transition-all text-sm font-semibold text-slate-600 hover:text-sky-600"
+            >
+              Trello Workspace
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </button>
+          </header>
 
       <div className="dashboard-grid">
 
@@ -378,8 +408,39 @@ export default function Home() {
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </main>
+          </div>
+        )}
+      </main>
+    </section>
+
+    {/* =========================================
+        PANEL 2: TRELLO WORKSPACE 
+        ========================================= */}
+    <section className="w-screen h-screen flex-shrink-0 snap-center relative bg-[#fdfbf7]">
+      <main className="dashboard-container relative h-full flex flex-col">
+          <header className="dashboard-header flex justify-between items-center px-4">
+            <button 
+              onClick={() => scrollToPanel(0)}
+              className="group flex items-center gap-2 px-4 py-2 bg-white/50 hover:bg-white/80 border border-slate-200 rounded-full shadow-sm backdrop-blur-md transition-all text-sm font-semibold text-slate-600 hover:text-sky-600"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+              Main Board
+            </button>
+            <h1 className="dashboard-title m-0">TRELLO WORKSPACE</h1>
+            <div className="w-32"></div> {/* Spacer for centering */}
+          </header>
+
+          <div className="flex-1 mt-4 p-2 glass-card h-full overflow-hidden">
+             {/* Trello Embed. Note: since it's mounted, navigation is preserved on swipe! */}
+             <iframe 
+               src="https://trello.com/b/XOH8XjzB.html" 
+               className="w-full h-full rounded-lg border-0"
+               allow="clipboard-read; clipboard-write; fullscreen"
+             ></iframe>
+          </div>
+      </main>
+    </section>
+
+    </div>
   );
 }
