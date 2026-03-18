@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 
 export default function Home() {
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const [news, setNews] = useState<any[]>([]);
   const [notices, setNotices] = useState<any[]>([]);
@@ -26,8 +25,16 @@ export default function Home() {
     fetchNews();
     fetchTodos();
     fetchNotices();
-    fetchBoardData();
   }, []);
+
+  const openTrelloPopup = (url: string) => {
+    const width = window.screen.width * 0.7;
+    const height = window.screen.height * 0.7;
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+    
+    window.open(url, '_blank', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+  };
 
   const fetchBoardData = async () => {
     setLoadingBoard(true);
@@ -155,40 +162,20 @@ export default function Home() {
   };
 
   const scrollToPanel = (index: number) => {
-    if (containerRef.current) {
-      const panelWidth = containerRef.current.clientWidth;
-      containerRef.current.scrollTo({
-        left: panelWidth * index,
-        behavior: 'smooth'
-      });
-    }
+    // Logic removed
   };
 
   return (
-    <div 
-      ref={containerRef}
-      className="w-screen h-screen overflow-x-auto overflow-y-hidden snap-x snap-mandatory flex custom-scrollbar-hide"
-      style={{ scrollBehavior: 'smooth' }}
-    >
+    <div className="w-screen h-screen overflow-hidden flex flex-col">
       {/* =========================================
-          PANEL 1: MAIN DASHBOARD 
+          MAIN DASHBOARD 
           ========================================= */}
-      <section className="w-screen h-screen flex-shrink-0 snap-center relative">
-        <main className="dashboard-container relative h-full">
-          <header className="dashboard-header flex justify-between items-center px-4">
-            <div className="w-24"></div> {/* Spacer for centering */}
-            <h1 className="dashboard-title m-0">WELLASSET BOARD</h1>
-            <button 
-              onClick={() => {
-                scrollToPanel(1);
-                fetchBoardData(); // Refresh on switch
-              }}
-              className="group flex items-center gap-2 px-4 py-2 bg-white/50 hover:bg-white/80 border border-slate-200 rounded-full shadow-sm backdrop-blur-md transition-all text-sm font-semibold text-slate-600 hover:text-sky-600"
-            >
-              Trello Workspace
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </header>
+      <main className="dashboard-container relative h-full">
+        <header className="dashboard-header flex justify-between items-center px-4">
+          <div className="w-24"></div> {/* Spacer for centering */}
+          <h1 className="dashboard-title m-0">WELLASSET BOARD</h1>
+          <div className="w-24"></div> {/* Spacer for centering */}
+        </header>
 
       <div className="dashboard-grid">
 
@@ -249,9 +236,12 @@ export default function Home() {
                                  className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer" 
                                />
                                <div className="flex-1 min-w-0">
-                                 <a href={task.cardUrl} target="_blank" rel="noopener noreferrer" className={`block text-[13px] font-bold leading-tight hover:text-sky-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                 <button 
+                                   onClick={() => openTrelloPopup(task.cardUrl)}
+                                   className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-sky-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}
+                                 >
                                    {task.title}
-                                 </a>
+                                 </button>
                                  <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>
                                    {task.cardName}
                                  </div>
@@ -269,7 +259,13 @@ export default function Home() {
               </div>
             )}
           </div>
-          <div className="shrink-0 mt-3 text-right">
+          <div className="shrink-0 mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
+            <div className="flex gap-2">
+              <button onClick={() => openTrelloPopup('https://trello.com/b/zHDWraQl')} className="trello-shortcut-btn">동천동</button>
+              <button onClick={() => openTrelloPopup('https://trello.com/b/yFCQoAY5')} className="trello-shortcut-btn">기타</button>
+              <button onClick={() => openTrelloPopup('https://trello.com/b/XOH8XjzB')} className="trello-shortcut-btn">준비</button>
+              <button onClick={() => openTrelloPopup('https://trello.com/b/p4hR5CFc')} className="trello-shortcut-btn">법인</button>
+            </div>
             <button
               onClick={openWeeklyView}
               className="text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors tracking-wide"
@@ -405,9 +401,12 @@ export default function Home() {
                                     className="mt-1.5 w-4 h-4 accent-sky-500 rounded-full cursor-pointer hover:opacity-100 transition-opacity" 
                                   />
                                   <div className={`text-[15px] font-bold leading-snug break-keep ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                                    <a href={task.cardUrl} target="_blank" rel="noopener noreferrer" className="hover:text-sky-600 transition-colors">
+                                    <button 
+                                      onClick={() => openTrelloPopup(task.cardUrl)}
+                                      className="hover:text-sky-600 transition-colors text-left"
+                                    >
                                       {task.title}
-                                    </a>
+                                    </button>
                                   </div>
                                 </div>
                                 <div className="pl-6 text-[13px] text-slate-500 font-medium truncate">
@@ -432,117 +431,6 @@ export default function Home() {
           </div>
         )}
       </main>
-    </section>
-
-    {/* =========================================
-        PANEL 2: TRELLO WORKSPACE 
-        ========================================= */}
-    <section className="w-screen h-screen flex-shrink-0 snap-center relative bg-[#fdfbf7]">
-      <main className="dashboard-container relative h-full flex flex-col">
-          <header className="dashboard-header flex justify-between items-center px-4">
-            <button 
-              onClick={() => scrollToPanel(0)}
-              className="group flex items-center gap-2 px-4 py-2 bg-white/50 hover:bg-white/80 border border-slate-200 rounded-full shadow-sm backdrop-blur-md transition-all text-sm font-semibold text-slate-600 hover:text-sky-600"
-            >
-              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-              Main Board
-            </button>
-            <h1 className="dashboard-title m-0">TRELLO WORKSPACE</h1>
-            <div className="w-32"></div> {/* Spacer for centering */}
-          </header>
-
-          <div className="flex-1 mt-4 p-4 glass-card h-full overflow-hidden flex flex-col pt-2">
-             <div className="flex justify-between items-center p-2 border-b border-slate-100 mb-4">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-slate-500">Board Data</span>
-                  <button 
-                    onClick={fetchBoardData}
-                    className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-0.5 rounded transition-colors"
-                  >
-                    {loadingBoard ? 'Updating...' : 'Refresh'}
-                  </button>
-                </div>
-                <a 
-                  href="https://trello.com/b/XOH8XjzB" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-xs text-sky-600 hover:text-sky-800 font-bold flex items-center gap-1"
-                >
-                   Trello.com ↗
-                </a>
-             </div>
-
-             <div className="flex-1 overflow-hidden">
-               {loadingBoard && !boardData ? (
-                 <div className="flex flex-col items-center justify-center h-full gap-4">
-                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
-                   <p className="text-slate-400 font-medium">Loading Trello data...</p>
-                 </div>
-               ) : boardData ? (
-                 <div className="kanban-board custom-scrollbar">
-                   {boardData.lists.map((list: any) => (
-                     <div key={list.id} className="kanban-column">
-                       <div className="kanban-column-header">
-                         <h3 className="kanban-column-title">{list.name}</h3>
-                         <span className="kanban-column-count">{list.cards.length}</span>
-                       </div>
-                       <div className="kanban-cards-container custom-scrollbar">
-                         {list.cards.map((card: any) => (
-                           <a 
-                             key={card.id} 
-                             href={card.url} 
-                             target="_blank" 
-                             rel="noopener noreferrer"
-                             className="kanban-card group"
-                           >
-                             <div className="kanban-card-title">{card.name}</div>
-                             
-                             {card.labels && card.labels.length > 0 && (
-                               <div className="kanban-card-labels">
-                                 {card.labels.map((label: any) => (
-                                   <span 
-                                     key={label.id} 
-                                     className="kanban-label"
-                                     style={{ backgroundColor: label.color === 'sky' ? '#0ea5e9' : label.color }}
-                                   >
-                                     {label.name}
-                                   </span>
-                                 ))}
-                               </div>
-                             )}
-
-                             <div className="kanban-card-footer">
-                                {card.due && (
-                                  <div className={`kanban-due-date ${new Date(card.due) < new Date() ? 'overdue' : ''}`}>
-                                    📅 {new Date(card.due).toLocaleDateString()}
-                                  </div>
-                                )}
-                                <div className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
-                                  View Details →
-                                </div>
-                             </div>
-                           </a>
-                         ))}
-                         {list.cards.length === 0 && (
-                           <div className="py-10 text-center text-slate-300 text-xs italic">
-                             No cards in this list
-                           </div>
-                         )}
-                       </div>
-                     </div>
-                   ))}
-                 </div>
-               ) : (
-                 <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                   <p>Failed to load board data.</p>
-                   <button onClick={fetchBoardData} className="mt-4 text-sky-500 font-bold">Try Again</button>
-                 </div>
-               )}
-             </div>
-          </div>
-      </main>
-    </section>
-
     </div>
   );
 }
