@@ -433,9 +433,10 @@ export default function Home() {
           <div className="flex-1 mt-4 p-2 glass-card h-full overflow-hidden">
              {/* Trello Embed. Note: since it's mounted, navigation is preserved on swipe! */}
              <iframe 
-               src="https://trello.com/b/XOH8XjzB.html" 
+               src="https://trello.com/b/XOH8XjzB" 
                className="w-full h-full rounded-lg border-0"
-               allow="clipboard-read; clipboard-write; fullscreen"
+               allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; payment"
+               referrerPolicy="no-referrer-when-downgrade"
              ></iframe>
           </div>
       </main>
