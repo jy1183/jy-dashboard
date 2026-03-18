@@ -430,13 +430,24 @@ export default function Home() {
             <div className="w-32"></div> {/* Spacer for centering */}
           </header>
 
-          <div className="flex-1 mt-4 p-2 glass-card h-full overflow-hidden">
+          <div className="flex-1 mt-4 p-2 glass-card h-full overflow-hidden flex flex-col">
+             <div className="flex justify-end p-2 border-b border-slate-100 mb-2">
+                <a 
+                  href="https://trello.com/b/XOH8XjzB" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-xs text-sky-600 hover:text-sky-800 font-bold flex items-center gap-1"
+                >
+                   External Open ↗
+                </a>
+             </div>
              {/* Trello Embed. Note: since it's mounted, navigation is preserved on swipe! */}
              <iframe 
                src="https://trello.com/b/XOH8XjzB.html" 
-               className="w-full h-full rounded-lg border-0"
-               allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; payment"
+               className="w-full h-full rounded-lg border-0 flex-1"
+               allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; payment; storage-access"
                referrerPolicy="no-referrer-when-downgrade"
+               sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-storage-access-by-user-activation"
              ></iframe>
           </div>
       </main>
