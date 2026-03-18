@@ -17,12 +17,30 @@ export default function Home() {
   const [loadingNews, setLoadingNews] = useState(true);
   const [loadingNotices, setLoadingNotices] = useState(false);
   const [loadingTodos, setLoadingTodos] = useState(true);
+  
+  // Board Data State
+  const [boardData, setBoardData] = useState<any>(null);
+  const [loadingBoard, setLoadingBoard] = useState(true);
 
   useEffect(() => {
     fetchNews();
     fetchTodos();
     fetchNotices();
+    fetchBoardData();
   }, []);
+
+  const fetchBoardData = async () => {
+    setLoadingBoard(true);
+    try {
+      const res = await fetch('/api/trello/board');
+      const data = await res.json();
+      if (data.lists) setBoardData(data);
+    } catch (e) {
+      console.error('Failed to fetch board data:', e);
+    } finally {
+      setLoadingBoard(false);
+    }
+  };
 
   const fetchNews = async () => {
     setLoadingNews(true);
@@ -161,7 +179,10 @@ export default function Home() {
             <div className="w-24"></div> {/* Spacer for centering */}
             <h1 className="dashboard-title m-0">WELLASSET BOARD</h1>
             <button 
-              onClick={() => scrollToPanel(1)}
+              onClick={() => {
+                scrollToPanel(1);
+                fetchBoardData(); // Refresh on switch
+              }}
               className="group flex items-center gap-2 px-4 py-2 bg-white/50 hover:bg-white/80 border border-slate-200 rounded-full shadow-sm backdrop-blur-md transition-all text-sm font-semibold text-slate-600 hover:text-sky-600"
             >
               Trello Workspace
@@ -430,25 +451,94 @@ export default function Home() {
             <div className="w-32"></div> {/* Spacer for centering */}
           </header>
 
-          <div className="flex-1 mt-4 p-2 glass-card h-full overflow-hidden flex flex-col">
-             <div className="flex justify-end p-2 border-b border-slate-100 mb-2">
+          <div className="flex-1 mt-4 p-4 glass-card h-full overflow-hidden flex flex-col pt-2">
+             <div className="flex justify-between items-center p-2 border-b border-slate-100 mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-slate-500">Board Data</span>
+                  <button 
+                    onClick={fetchBoardData}
+                    className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-0.5 rounded transition-colors"
+                  >
+                    {loadingBoard ? 'Updating...' : 'Refresh'}
+                  </button>
+                </div>
                 <a 
                   href="https://trello.com/b/XOH8XjzB" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-xs text-sky-600 hover:text-sky-800 font-bold flex items-center gap-1"
                 >
-                   External Open ↗
+                   Trello.com ↗
                 </a>
              </div>
-             {/* Trello Embed. Note: since it's mounted, navigation is preserved on swipe! */}
-             <iframe 
-               src="https://trello.com/b/XOH8XjzB.html" 
-               className="w-full h-full rounded-lg border-0 flex-1"
-               allow="clipboard-read; clipboard-write; fullscreen; camera; microphone; payment; storage-access"
-               referrerPolicy="no-referrer-when-downgrade"
-               sandbox="allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts allow-storage-access-by-user-activation"
-             ></iframe>
+
+             <div className="flex-1 overflow-hidden">
+               {loadingBoard && !boardData ? (
+                 <div className="flex flex-col items-center justify-center h-full gap-4">
+                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-500"></div>
+                   <p className="text-slate-400 font-medium">Loading Trello data...</p>
+                 </div>
+               ) : boardData ? (
+                 <div className="kanban-board custom-scrollbar">
+                   {boardData.lists.map((list: any) => (
+                     <div key={list.id} className="kanban-column">
+                       <div className="kanban-column-header">
+                         <h3 className="kanban-column-title">{list.name}</h3>
+                         <span className="kanban-column-count">{list.cards.length}</span>
+                       </div>
+                       <div className="kanban-cards-container custom-scrollbar">
+                         {list.cards.map((card: any) => (
+                           <a 
+                             key={card.id} 
+                             href={card.url} 
+                             target="_blank" 
+                             rel="noopener noreferrer"
+                             className="kanban-card group"
+                           >
+                             <div className="kanban-card-title">{card.name}</div>
+                             
+                             {card.labels && card.labels.length > 0 && (
+                               <div className="kanban-card-labels">
+                                 {card.labels.map((label: any) => (
+                                   <span 
+                                     key={label.id} 
+                                     className="kanban-label"
+                                     style={{ backgroundColor: label.color === 'sky' ? '#0ea5e9' : label.color }}
+                                   >
+                                     {label.name}
+                                   </span>
+                                 ))}
+                               </div>
+                             )}
+
+                             <div className="kanban-card-footer">
+                                {card.due && (
+                                  <div className={`kanban-due-date ${new Date(card.due) < new Date() ? 'overdue' : ''}`}>
+                                    📅 {new Date(card.due).toLocaleDateString()}
+                                  </div>
+                                )}
+                                <div className="text-[10px] opacity-0 group-hover:opacity-100 transition-opacity">
+                                  View Details →
+                                </div>
+                             </div>
+                           </a>
+                         ))}
+                         {list.cards.length === 0 && (
+                           <div className="py-10 text-center text-slate-300 text-xs italic">
+                             No cards in this list
+                           </div>
+                         )}
+                       </div>
+                     </div>
+                   ))}
+                 </div>
+               ) : (
+                 <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                   <p>Failed to load board data.</p>
+                   <button onClick={fetchBoardData} className="mt-4 text-sky-500 font-bold">Try Again</button>
+                 </div>
+               )}
+             </div>
           </div>
       </main>
     </section>
