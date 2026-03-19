@@ -196,9 +196,18 @@ export default function Home() {
 
         {/* Top Right: Tasks (Today + 3 Days) */}
         <section className="glass-card flex flex-col">
-          <div className="card-header shrink-0">
+          <div className="card-header shrink-0 flex justify-between items-center">
             <h2 className="card-title">할일 일정 (오늘 ~ 3일)</h2>
-            <div className="text-xs text-slate-400">Trello API</div>
+            <div className="flex items-center gap-2">
+              <button 
+                className="refresh-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded text-slate-600 transition-colors"
+                onClick={fetchTodos}
+                disabled={loadingTodos}
+              >
+                {loadingTodos ? '...' : '새로고침'}
+              </button>
+              <div className="text-xs text-slate-400">Trello API</div>
+            </div>
           </div>
           <div className="card-content flex-1 overflow-hidden">
             {loadingTodos ? (
