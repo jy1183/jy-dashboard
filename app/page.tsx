@@ -209,62 +209,65 @@ export default function Home() {
               <div className="text-xs text-slate-400">Trello API</div>
             </div>
           </div>
-          <div className="card-content flex-1 overflow-hidden">
-            {loadingTodos ? (
-              <div className="flex justify-center items-center h-full">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-300"></div>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-full overflow-y-auto pr-2 custom-scrollbar">
-                {[0, 1, 2, 3].map(dayOffset => {
-                  const dayTasks = todos.filter(t => t.dayIndex === dayOffset);
-                  const isToday = dayOffset === 0;
-                  return (
-                    <div 
-                      key={dayOffset} 
-                      className={`flex flex-col h-full rounded-xl border ${isToday ? 'bg-sky-50/30 border-sky-200' : 'bg-white/40 border-slate-100'} overflow-hidden`}
-                      onDragOver={handleDragOver}
-                      onDrop={(e) => handleDrop(e, dayOffset, false)}
-                    >
-                      <div className={`py-2 px-3 text-center text-sm font-bold border-b ${isToday ? 'bg-sky-100/50 text-sky-700 border-sky-200' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
-                        {getDayName(dayOffset)}
-                      </div>
-                      <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
-                        {dayTasks.map((task) => (
-                           <div 
-                             key={task.id} 
-                             draggable
-                             onDragStart={(e) => handleDragStart(e, task)}
-                             className={`p-2 rounded-lg border shadow-sm transition-all cursor-move ${task.state === 'complete' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200 hover:border-sky-300'}`}
-                           >
-                             <div className="flex items-start gap-2">
-                               <input 
-                                 type="checkbox" 
-                                 checked={task.state === 'complete'} 
-                                 onChange={() => handleCheck(task.id, task.cardId, task.state, false)}
-                                 className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer" 
-                               />
-                               <div className="flex-1 min-w-0">
-                                 <button 
-                                   onClick={() => openTrelloPopup(task.cardUrl)}
-                                   className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-sky-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}
-                                 >
-                                   {task.title}
-                                 </button>
-                                 <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>
-                                   {task.cardName}
-                                 </div>
-                               </div>
-                             </div>
-                           </div>
-                        ))}
-                        {dayTasks.length === 0 && (
-                          <div className="text-center text-slate-400 text-xs py-4 flex items-center justify-center h-full opacity-50 border-2 border-dashed border-transparent hover:border-slate-300 rounded-lg">가져다 놓기 (Drag & Drop)</div>
-                        )}
-                      </div>
+          <div className="card-content flex-1 overflow-hidden relative">
+            <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 h-full overflow-y-auto pr-2 custom-scrollbar transition-opacity duration-300 ${loadingTodos ? 'opacity-40' : 'opacity-100'}`}>
+              {[0, 1, 2, 3].map(dayOffset => {
+                const dayTasks = todos.filter(t => t.dayIndex === dayOffset);
+                const isToday = dayOffset === 0;
+                return (
+                  <div 
+                    key={dayOffset} 
+                    className={`flex flex-col h-full rounded-xl border ${isToday ? 'bg-sky-50/30 border-sky-200' : 'bg-white/40 border-slate-100'} overflow-hidden`}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, dayOffset, false)}
+                  >
+                    <div className={`py-2 px-3 text-center text-sm font-bold border-b ${isToday ? 'bg-sky-100/50 text-sky-700 border-sky-200' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>
+                      {getDayName(dayOffset)}
                     </div>
-                  );
-                })}
+                    <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
+                      {dayTasks.map((task) => (
+                          <div 
+                            key={task.id} 
+                            draggable
+                            onDragStart={(e) => handleDragStart(e, task)}
+                            className={`p-2 rounded-lg border shadow-sm transition-all cursor-move ${task.state === 'complete' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200 hover:border-sky-300'}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              <input 
+                                type="checkbox" 
+                                checked={task.state === 'complete'} 
+                                onChange={() => handleCheck(task.id, task.cardId, task.state, false)}
+                                className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer" 
+                              />
+                              <div className="flex-1 min-w-0">
+                                <button 
+                                  onClick={() => openTrelloPopup(task.cardUrl)}
+                                  className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-sky-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}
+                                >
+                                  {task.title}
+                                </button>
+                                <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>
+                                  {task.cardName}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                      ))}
+                      {dayTasks.length === 0 && (
+                        <div className="text-center text-slate-400 text-xs py-4 flex items-center justify-center h-full opacity-50 border-2 border-dashed border-transparent hover:border-slate-300 rounded-lg">가져다 놓기 (Drag & Drop)</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {loadingTodos && (
+              <div className="absolute inset-0 flex justify-center items-center bg-white/10 backdrop-blur-[1px] z-10 transition-all">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500"></div>
+                  <div className="text-xs font-bold text-sky-600 bg-white/80 px-2 py-0.5 rounded shadow-sm">업데이트 중...</div>
+                </div>
               </div>
             )}
           </div>
