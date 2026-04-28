@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ExternalLink, RefreshCw, ChevronRight, Trello, Bell, Link, Clock } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, ChevronRight, Trello, Bell, Link, Clock, CheckSquare } from 'lucide-react';
 
 const TRELLO_BOARDS = [
   { id: 'zHDWraQl', name: '동천동', url: 'https://trello.com/b/zHDWraQl' },
@@ -25,6 +25,7 @@ export default function Home() {
   const [todos, setTodos] = useState<any[]>([]);
   const [overdueTodos, setOverdueTodos] = useState<any[]>([]);
   const [showWeekly, setShowWeekly] = useState(false);
+  const [showChecklist, setShowChecklist] = useState(false);
   const [weeklyTasks, setWeeklyTasks] = useState<any[]>([]);
   const [loadingNews, setLoadingNews] = useState(true);
   const [loadingNotices, setLoadingNotices] = useState(false);
@@ -65,25 +66,25 @@ export default function Home() {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (showWeekly) return;
+      if (showWeekly || showChecklist) return;
       if (e.key === 'ArrowRight' && currentPage === 0) navigateTo(1);
       if (e.key === 'ArrowLeft' && currentPage === 1) navigateTo(0);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, showWeekly, navigateTo]);
+  }, [currentPage, showWeekly, showChecklist, navigateTo]);
 
   // Shift+wheel navigation
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (!e.shiftKey || showWeekly) return;
+      if (!e.shiftKey || showWeekly || showChecklist) return;
       e.preventDefault();
       if (e.deltaY > 0 && currentPage === 0) navigateTo(1);
       if (e.deltaY < 0 && currentPage === 1) navigateTo(0);
     };
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [currentPage, showWeekly, navigateTo]);
+  }, [currentPage, showWeekly, showChecklist, navigateTo]);
 
   const fetchBoardData = async (boardId: string) => {
     setLoadingBoard(true);
@@ -141,6 +142,7 @@ export default function Home() {
     } catch (e) { console.error(e); } finally { setLoadingTodos(false); }
   };
   const openWeeklyView = async () => { setShowWeekly(true); try { const res = await fetch('/api/trello/checklists?days=6'); const data = await res.json(); if (data.tasks) setWeeklyTasks(data.tasks); } catch (e) { console.error(e); } };
+  const openChecklistView = () => { fetchTodos(); setShowChecklist(true); };
   const openTrelloPopup = (url: string) => { const w = window.screen.width * 0.7; const h = window.screen.height * 0.7; const l = (window.screen.width - w) / 2; const t = (window.screen.height - h) / 2; window.open(url, '_blank', 'width=' + w + ',height=' + h + ',left=' + l + ',top=' + t + ',scrollbars=yes,resizable=yes'); };
 
   const handleCheck = async (taskId: string, cardId: string, currentState: string, isWeekly: boolean = false) => {
@@ -189,82 +191,23 @@ export default function Home() {
                 <Trello size={15} /> 트렐로 보드 <ChevronRight size={14} />
               </button>
             </header>
-            <div className="dashboard-grid">
-              <section className="glass-card">
-                <div className="card-header"><h2 className="card-title">스케줄</h2></div>
-                <div className="card-content p-0 overflow-hidden relative">
-                  <iframe src="https://calendar.google.com/calendar/embed?src=e1l3et8im3hak9mnto6r64da64%40group.calendar.google.com&ctz=Asia%2FSeoul&mode=AGENDA" style={{ border: 0, width: "100%", height: "100%", position: 'absolute', top: 0, left: 0 }} frameBorder="0" scrolling="no"></iframe>
-                </div>
-              </section>
-              <section className="glass-card flex flex-col">
-                <div className="card-header shrink-0 flex justify-between items-center">
-                  <h2 className="card-title">할일 일정 (기한지남 + 오늘 ~ 3일)</h2>
-                  <div className="flex items-center gap-2">
-                    <button className="refresh-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded text-slate-600 transition-colors" onClick={fetchTodos} disabled={loadingTodos}>{loadingTodos ? '...' : '새로고침'}</button>
-                    <div className="text-xs text-slate-400">Trello API</div>
-                  </div>
-                </div>
-                <div className="card-content flex-1 overflow-hidden relative">
-                  <div className={`grid gap-4 h-full overflow-y-auto pr-2 custom-scrollbar transition-opacity duration-300 ${loadingTodos ? 'opacity-40' : 'opacity-100'}`} style={{ gridTemplateColumns: overdueTodos.length > 0 ? 'repeat(5, 1fr)' : 'repeat(4, 1fr)' }}>
-                    {overdueTodos.length > 0 && (
-                      <div className="flex flex-col h-full rounded-xl border bg-red-50/30 border-red-200 overflow-hidden">
-                        <div className="py-2 px-3 text-center text-sm font-bold border-b bg-red-100/50 text-red-600 border-red-200 flex items-center justify-center gap-1"><Clock size={13} /> 기한 지남</div>
-                        <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
-                          {overdueTodos.map(task => (
-                            <div key={task.id} className={`p-2 rounded-lg border shadow-sm transition-all ${task.state === 'complete' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-red-200 hover:border-red-300'}`}>
-                              <div className="flex items-start gap-2">
-                                <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state, false)} className="mt-1 w-4 h-4 accent-red-500 rounded cursor-pointer" />
-                                <div className="flex-1 min-w-0">
-                                  <button onClick={() => openTrelloPopup(task.cardUrl)} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-red-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
-                                  <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>{task.cardName}</div>
-                                  {task.due && <div className="text-[10px] text-red-500 mt-0.5 font-semibold">{new Date(task.due).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</div>}
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {[0,1,2,3].map(dayOffset => {
-                      const dayTasks = todos.filter(t => t.dayIndex === dayOffset);
-                      const isToday = dayOffset === 0;
-                      return (
-                        <div key={dayOffset} className={`flex flex-col h-full rounded-xl border ${isToday ? 'bg-sky-50/30 border-sky-200' : 'bg-white/40 border-slate-100'} overflow-hidden`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, dayOffset, false)}>
-                          <div className={`py-2 px-3 text-center text-sm font-bold border-b ${isToday ? 'bg-sky-100/50 text-sky-700 border-sky-200' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>{getDayName(dayOffset)}</div>
-                          <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
-                            {dayTasks.map(task => (
-                              <div key={task.id} draggable onDragStart={(e) => handleDragStart(e, task)} className={`p-2 rounded-lg border shadow-sm transition-all cursor-move ${task.state === 'complete' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200 hover:border-sky-300'}`}>
-                                <div className="flex items-start gap-2">
-                                  <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state, false)} className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer" />
-                                  <div className="flex-1 min-w-0">
-                                    <button onClick={() => openTrelloPopup(task.cardUrl)} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-sky-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
-                                    <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>{task.cardName}</div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                            {dayTasks.length === 0 && <div className="text-center text-slate-400 text-xs py-4 flex items-center justify-center h-full opacity-50 border-2 border-dashed border-transparent hover:border-slate-300 rounded-lg">가져다 놓기 (Drag & Drop)</div>}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {loadingTodos && <div className="absolute inset-0 flex justify-center items-center bg-white/10 backdrop-blur-[1px] z-10"><div className="flex flex-col items-center gap-2"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500"></div><div className="text-xs font-bold text-sky-600 bg-white/80 px-2 py-0.5 rounded shadow-sm">업데이트 중...</div></div></div>}
-                </div>
-                <div className="shrink-0 mt-3 pt-3 border-t border-slate-100 flex justify-between items-center">
-                  <div className="flex gap-2">
-                    {TRELLO_BOARDS.map((board, idx) => (<button key={board.id} onClick={() => { navigateTo(1); switchBoard(idx); }} className="trello-shortcut-btn">{board.name}</button>))}
-                  </div>
-                  <button onClick={openWeeklyView} className="text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors tracking-wide">WEEKLY VIEW &rarr;</button>
-                </div>
-              </section>
-              <section className="glass-card">
+            <div className="dashboard-grid-v2">
+              {/* Left: News - full height */}
+              <section className="glass-card news-area">
                 <div className="card-header"><h2 className="card-title">부동산 뉴스</h2><div className="text-xs text-slate-400">bdsplanet</div></div>
                 <div className="card-content">
                   {loadingNews ? <div className="flex justify-center items-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-300"></div></div> : <ul>{news.map((item, idx) => (<li key={idx} className="news-item"><a href={item.link} target="_blank" rel="noopener noreferrer" className="news-link">{item.title}</a><span className="news-meta">{item.media}</span></li>))}</ul>}
                 </div>
               </section>
-              <section className="glass-card">
+              {/* Right top: Calendar */}
+              <section className="glass-card calendar-area">
+                <div className="card-header"><h2 className="card-title">스케줄</h2></div>
+                <div className="card-content p-0 overflow-hidden relative">
+                  <iframe src="https://calendar.google.com/calendar/embed?src=e1l3et8im3hak9mnto6r64da64%40group.calendar.google.com&ctz=Asia%2FSeoul&mode=AGENDA" style={{ border: 0, width: "100%", height: "100%", position: 'absolute', top: 0, left: 0 }} frameBorder="0" scrolling="no"></iframe>
+                </div>
+              </section>
+              {/* Right bottom: LH notices */}
+              <section className="glass-card lh-area">
                 <div className="card-header">
                   <h2 className="card-title"><a href="https://apply.lh.or.kr/lhapply/apply/pch/list.do?mi=1076" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LH 매입공고</a></h2>
                   <button className="refresh-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded text-slate-600" onClick={fetchNotices} disabled={loadingNotices}>{loadingNotices ? '...' : '새로고침'}</button>
@@ -289,13 +232,20 @@ export default function Home() {
                 <button onClick={() => navigateTo(0)} className="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-sky-500 transition-colors"><ArrowLeft size={15} /> 대시보드</button>
                 <h1 className="text-xl font-extrabold text-slate-700 tracking-tight">{boardData?.boardName || '트렐로 보드'}</h1>
                 {boardData?.boardUrl && <a href={boardData.boardUrl} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-sky-500 transition-colors" title="트렐로에서 열기"><ExternalLink size={14} /></a>}
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={openChecklistView} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all border bg-blue-50 border-blue-300 text-blue-600 hover:bg-blue-100 hover:border-blue-400 shadow-sm">
+                  <CheckSquare size={13} /> 체크리스트
+                </button>
+                <div className="w-px h-5 bg-slate-200 mx-1"></div>
+                {TRELLO_BOARDS.map((board, idx) => (<button key={board.id} onClick={() => switchBoard(idx)} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedBoardIdx === idx ? 'bg-sky-50 border-sky-300 text-sky-600 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'}`}>{board.name}</button>))}
                 <div className="relative" ref={notificationRef}>
                   <button onClick={() => { if (!showNotifications) fetchNotifications(); setShowNotifications(!showNotifications); }} className="relative p-1.5 rounded-full text-slate-400 hover:text-sky-500 hover:bg-sky-50 transition-all" title="알림">
                     <Bell size={18} />
                     {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold min-w-[16px] h-4 flex items-center justify-center rounded-full px-1">{unreadCount > 9 ? '9+' : unreadCount}</span>}
                   </button>
                   {showNotifications && (
-                    <div className="absolute top-10 left-0 w-[380px] max-h-[500px] bg-white rounded-xl border border-slate-200 shadow-xl z-50 flex flex-col overflow-hidden">
+                    <div className="absolute top-10 right-0 w-[380px] max-h-[500px] bg-white rounded-xl border border-slate-200 shadow-xl z-50 flex flex-col overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 bg-slate-50/50 shrink-0">
                         <h3 className="text-[17px] font-bold text-slate-700">알림</h3>
                         <div className="flex items-center gap-2">
@@ -322,10 +272,7 @@ export default function Home() {
                     </div>
                   )}
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {TRELLO_BOARDS.map((board, idx) => (<button key={board.id} onClick={() => switchBoard(idx)} className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all border ${selectedBoardIdx === idx ? 'bg-sky-50 border-sky-300 text-sky-600 shadow-sm' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'}`}>{board.name}</button>))}
-                <button onClick={() => { fetchBoardData(TRELLO_BOARDS[selectedBoardIdx].id); fetchActivity(TRELLO_BOARDS[selectedBoardIdx].id); }} disabled={loadingBoard} className="ml-2 p-1.5 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-sky-500 hover:border-sky-300 transition-all disabled:opacity-40" title="새로고침"><RefreshCw size={14} className={loadingBoard ? 'animate-spin' : ''} /></button>
+                <button onClick={() => { fetchBoardData(TRELLO_BOARDS[selectedBoardIdx].id); fetchActivity(TRELLO_BOARDS[selectedBoardIdx].id); }} disabled={loadingBoard} className="p-1.5 rounded-full bg-white border border-slate-200 text-slate-400 hover:text-sky-500 hover:border-sky-300 transition-all disabled:opacity-40" title="새로고침"><RefreshCw size={14} className={loadingBoard ? 'animate-spin' : ''} /></button>
               </div>
             </header>
             <div className="flex-1 overflow-hidden min-h-0 relative flex gap-4">
@@ -400,6 +347,72 @@ export default function Home() {
         )}
       </AnimatePresence>
 
+      {/* Checklist Modal */}
+      {showChecklist && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+          <div className="bg-[#fcfbf7] w-full max-w-[95%] h-[75vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/50 ring-1 ring-black/5">
+            <div className="p-5 border-b border-black/5 flex justify-between items-center bg-white/60 backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-bold text-slate-700 tracking-tight flex items-center gap-2"><CheckSquare size={20} className="text-blue-500" /> 할일 일정 (기한지남 + 오늘 ~ 3일)</h2>
+                <button className="refresh-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded text-slate-600 transition-colors" onClick={fetchTodos} disabled={loadingTodos}>{loadingTodos ? '...' : '새로고침'}</button>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={() => { setShowChecklist(false); openWeeklyView(); }} className="text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors tracking-wide">WEEKLY VIEW &rarr;</button>
+                <button onClick={() => setShowChecklist(false)} className="text-slate-400 hover:text-slate-800 text-3xl transition-colors leading-none">&times;</button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-auto p-5 bg-[#f6f5f0]">
+              <div className={`grid gap-4 h-full transition-opacity duration-300 ${loadingTodos ? 'opacity-40' : 'opacity-100'}`} style={{ gridTemplateColumns: overdueTodos.length > 0 ? 'repeat(5, 1fr)' : 'repeat(4, 1fr)', minWidth: overdueTodos.length > 0 ? '1100px' : '900px' }}>
+                {overdueTodos.length > 0 && (
+                  <div className="flex flex-col h-full rounded-xl border bg-red-50/30 border-red-200 overflow-hidden">
+                    <div className="py-2.5 px-3 text-center text-sm font-bold border-b bg-red-100/50 text-red-600 border-red-200 flex items-center justify-center gap-1"><Clock size={13} /> 기한 지남</div>
+                    <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
+                      {overdueTodos.map(task => (
+                        <div key={task.id} className={`p-2.5 rounded-lg border shadow-sm transition-all ${task.state === 'complete' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-red-200 hover:border-red-300'}`}>
+                          <div className="flex items-start gap-2">
+                            <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state, false)} className="mt-1 w-4 h-4 accent-red-500 rounded cursor-pointer" />
+                            <div className="flex-1 min-w-0">
+                              <button onClick={() => openTrelloPopup(task.cardUrl)} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-red-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
+                              <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>{task.cardName}</div>
+                              {task.due && <div className="text-[10px] text-red-500 mt-0.5 font-semibold">{new Date(task.due).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</div>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {[0,1,2,3].map(dayOffset => {
+                  const dayTasks = todos.filter(t => t.dayIndex === dayOffset);
+                  const isToday = dayOffset === 0;
+                  return (
+                    <div key={dayOffset} className={`flex flex-col h-full rounded-xl border ${isToday ? 'bg-sky-50/30 border-sky-200' : 'bg-white/40 border-slate-100'} overflow-hidden`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, dayOffset, false)}>
+                      <div className={`py-2.5 px-3 text-center text-sm font-bold border-b ${isToday ? 'bg-sky-100/50 text-sky-700 border-sky-200' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>{getDayName(dayOffset)}</div>
+                      <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
+                        {dayTasks.map(task => (
+                          <div key={task.id} draggable onDragStart={(e) => handleDragStart(e, task)} className={`p-2.5 rounded-lg border shadow-sm transition-all cursor-move ${task.state === 'complete' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200 hover:border-sky-300'}`}>
+                            <div className="flex items-start gap-2">
+                              <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state, false)} className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer" />
+                              <div className="flex-1 min-w-0">
+                                <button onClick={() => openTrelloPopup(task.cardUrl)} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-sky-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
+                                <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>{task.cardName}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        {dayTasks.length === 0 && <div className="text-center text-slate-400 text-xs py-4 flex items-center justify-center h-full opacity-50 border-2 border-dashed border-transparent hover:border-slate-300 rounded-lg">가져다 놓기 (Drag & Drop)</div>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {loadingTodos && <div className="absolute inset-0 flex justify-center items-center bg-white/10 backdrop-blur-[1px] z-10"><div className="flex flex-col items-center gap-2"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500"></div><div className="text-xs font-bold text-sky-600 bg-white/80 px-2 py-0.5 rounded shadow-sm">업데이트 중...</div></div></div>}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Weekly View Modal */}
       {showWeekly && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
           <div className="bg-[#fcfbf7] w-full max-w-[98%] h-[72vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/50 ring-1 ring-black/5">
