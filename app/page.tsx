@@ -24,9 +24,7 @@ export default function Home() {
   const [notices, setNotices] = useState<any[]>([]);
   const [todos, setTodos] = useState<any[]>([]);
   const [overdueTodos, setOverdueTodos] = useState<any[]>([]);
-  const [showWeekly, setShowWeekly] = useState(false);
   const [showChecklist, setShowChecklist] = useState(false);
-  const [weeklyTasks, setWeeklyTasks] = useState<any[]>([]);
   const [loadingNews, setLoadingNews] = useState(true);
   const [loadingNotices, setLoadingNotices] = useState(false);
   const [loadingTodos, setLoadingTodos] = useState(true);
@@ -66,25 +64,25 @@ export default function Home() {
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (showWeekly || showChecklist) return;
+      if (showChecklist) return;
       if (e.key === 'ArrowRight' && currentPage === 0) navigateTo(1);
       if (e.key === 'ArrowLeft' && currentPage === 1) navigateTo(0);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, showWeekly, showChecklist, navigateTo]);
+  }, [currentPage, showChecklist, navigateTo]);
 
   // Shift+wheel navigation
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
-      if (!e.shiftKey || showWeekly || showChecklist) return;
+      if (!e.shiftKey || showChecklist) return;
       e.preventDefault();
       if (e.deltaY > 0 && currentPage === 0) navigateTo(1);
       if (e.deltaY < 0 && currentPage === 1) navigateTo(0);
     };
     window.addEventListener('wheel', handleWheel, { passive: false });
     return () => window.removeEventListener('wheel', handleWheel);
-  }, [currentPage, showWeekly, showChecklist, navigateTo]);
+  }, [currentPage, showChecklist, navigateTo]);
 
   const fetchBoardData = async (boardId: string) => {
     setLoadingBoard(true);
@@ -141,21 +139,20 @@ export default function Home() {
       if (data.overdueTasks) setOverdueTodos(data.overdueTasks);
     } catch (e) { console.error(e); } finally { setLoadingTodos(false); }
   };
-  const openWeeklyView = async () => { setShowWeekly(true); try { const res = await fetch('/api/trello/checklists?days=6'); const data = await res.json(); if (data.tasks) setWeeklyTasks(data.tasks); } catch (e) { console.error(e); } };
   const openChecklistView = () => { fetchTodos(); setShowChecklist(true); };
   const openTrelloPopup = (url: string) => { const w = window.screen.width * 0.7; const h = window.screen.height * 0.7; const l = (window.screen.width - w) / 2; const t = (window.screen.height - h) / 2; window.open(url, '_blank', 'width=' + w + ',height=' + h + ',left=' + l + ',top=' + t + ',scrollbars=yes,resizable=yes'); };
 
-  const handleCheck = async (taskId: string, cardId: string, currentState: string, isWeekly: boolean = false) => {
+  const handleCheck = async (taskId: string, cardId: string, currentState: string) => {
     const newState = currentState === 'complete' ? 'incomplete' : 'complete';
     const updateTask = (t: any) => t.id === taskId ? { ...t, state: newState } : t;
-    if (isWeekly) setWeeklyTasks(prev => prev.map(updateTask)); else setTodos(prev => prev.map(updateTask));
+    setTodos(prev => prev.map(updateTask));
     try { await fetch('/api/trello/checklists', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cardId, itemId: taskId, state: newState }) }); }
-    catch (e) { console.error(e); const revertTask = (t: any) => t.id === taskId ? { ...t, state: currentState } : t; if (isWeekly) setWeeklyTasks(prev => prev.map(revertTask)); else setTodos(prev => prev.map(revertTask)); }
+    catch (e) { console.error(e); const revertTask = (t: any) => t.id === taskId ? { ...t, state: currentState } : t; setTodos(prev => prev.map(revertTask)); }
   };
 
   const handleDragStart = (e: React.DragEvent, task: any) => { e.dataTransfer.setData('task', JSON.stringify(task)); };
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); };
-  const handleDrop = async (e: React.DragEvent, targetDayOffset: number, isWeekly: boolean = false) => {
+  const handleDrop = async (e: React.DragEvent, targetDayOffset: number) => {
     e.preventDefault(); const taskJson = e.dataTransfer.getData('task'); if (!taskJson) return;
     const task = JSON.parse(taskJson); if (task.dayIndex === targetDayOffset) return;
     const currentDue = new Date(task.due); const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -163,9 +160,9 @@ export default function Home() {
     newDate.setHours(currentDue.getHours() || 12, currentDue.getMinutes() || 0, 0);
     const newDueIso = newDate.toISOString();
     const updateTask = (t: any) => t.id === task.id ? { ...t, dayIndex: targetDayOffset, due: newDueIso } : t;
-    if (isWeekly) setWeeklyTasks(prev => prev.map(updateTask)); else setTodos(prev => prev.map(updateTask));
+    setTodos(prev => prev.map(updateTask));
     try { await fetch('/api/trello/checklists', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cardId: task.cardId, itemId: task.id, dueDate: newDueIso }) }); }
-    catch (err) { console.error(err); if (isWeekly) setWeeklyTasks(prev => prev.map(t => t.id === task.id ? task : t)); else setTodos(prev => prev.map(t => t.id === task.id ? task : t)); }
+    catch (err) { console.error(err); setTodos(prev => prev.map(t => t.id === task.id ? task : t)); }
   };
 
   const getDayName = (offset: number) => {
@@ -333,7 +330,7 @@ export default function Home() {
                   ) : activityData.map((a) => (
                     <div key={a.id} className="px-3 py-2.5 border-b border-slate-100 hover:bg-white/60 transition-colors">
                       <div className="text-[13px] text-slate-500"><span className="font-bold text-slate-700">{a.memberName}</span> <span className="text-sky-600">{getActivityText(a)}</span></div>
-                      {a.cardName && <div className="text-[12px] text-slate-600 mt-0.5 font-semibold truncate">{a.cardName}</div>}
+                      {a.cardName && <div className="text-[12px] text-slate-600 mt-0.5 font-semibold truncate cursor-pointer hover:text-sky-600 transition-colors" onClick={() => { if (a.cardId) openTrelloPopup('https://trello.com/c/' + a.cardId); }}>{a.cardName}</div>}
                       {a.text && <div className="text-[12px] text-slate-400 mt-0.5 line-clamp-2">{a.text}</div>}
                       {a.listAfter && a.listBefore && <div className="text-[11px] text-slate-400 mt-0.5">{a.listBefore} → {a.listAfter}</div>}
                       {a.checkItem && <div className="text-[11px] text-slate-400 mt-0.5">{a.checkItem} ({a.checkItemState === 'complete' ? '완료' : '미완료'})</div>}
@@ -356,21 +353,18 @@ export default function Home() {
                 <h2 className="text-xl font-bold text-slate-700 tracking-tight flex items-center gap-2"><CheckSquare size={20} className="text-blue-500" /> 할일 일정 (기한지남 + 오늘 ~ 3일)</h2>
                 <button className="refresh-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded text-slate-600 transition-colors" onClick={fetchTodos} disabled={loadingTodos}>{loadingTodos ? '...' : '새로고침'}</button>
               </div>
-              <div className="flex items-center gap-3">
-                <button onClick={() => { setShowChecklist(false); openWeeklyView(); }} className="text-xs font-semibold text-slate-400 hover:text-slate-700 transition-colors tracking-wide">WEEKLY VIEW &rarr;</button>
-                <button onClick={() => setShowChecklist(false)} className="text-slate-400 hover:text-slate-800 text-3xl transition-colors leading-none">&times;</button>
-              </div>
+              <button onClick={() => setShowChecklist(false)} className="text-slate-400 hover:text-slate-800 text-3xl transition-colors leading-none">&times;</button>
             </div>
-            <div className="flex-1 overflow-auto p-5 bg-[#f6f5f0]">
-              <div className={`grid gap-4 h-full transition-opacity duration-300 ${loadingTodos ? 'opacity-40' : 'opacity-100'}`} style={{ gridTemplateColumns: overdueTodos.length > 0 ? 'repeat(5, 1fr)' : 'repeat(4, 1fr)', minWidth: overdueTodos.length > 0 ? '1100px' : '900px' }}>
+            <div className="flex-1 overflow-x-auto overflow-y-hidden p-5 bg-[#f6f5f0] relative">
+              <div className={`flex gap-4 h-full transition-opacity duration-300 ${loadingTodos ? 'opacity-40' : 'opacity-100'}`}>
                 {overdueTodos.length > 0 && (
-                  <div className="flex flex-col h-full rounded-xl border bg-red-50/30 border-red-200 overflow-hidden">
+                  <div className="flex flex-col h-full rounded-xl border bg-red-50/30 border-red-200 overflow-hidden w-[260px] shrink-0">
                     <div className="py-2.5 px-3 text-center text-sm font-bold border-b bg-red-100/50 text-red-600 border-red-200 flex items-center justify-center gap-1"><Clock size={13} /> 기한 지남</div>
                     <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
                       {overdueTodos.map(task => (
                         <div key={task.id} className={`p-2.5 rounded-lg border shadow-sm transition-all ${task.state === 'complete' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-red-200 hover:border-red-300'}`}>
                           <div className="flex items-start gap-2">
-                            <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state, false)} className="mt-1 w-4 h-4 accent-red-500 rounded cursor-pointer" />
+                            <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state)} className="mt-1 w-4 h-4 accent-red-500 rounded cursor-pointer" />
                             <div className="flex-1 min-w-0">
                               <button onClick={() => openTrelloPopup(task.cardUrl)} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-red-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
                               <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>{task.cardName}</div>
@@ -386,13 +380,13 @@ export default function Home() {
                   const dayTasks = todos.filter(t => t.dayIndex === dayOffset);
                   const isToday = dayOffset === 0;
                   return (
-                    <div key={dayOffset} className={`flex flex-col h-full rounded-xl border ${isToday ? 'bg-sky-50/30 border-sky-200' : 'bg-white/40 border-slate-100'} overflow-hidden`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, dayOffset, false)}>
+                    <div key={dayOffset} className={`flex flex-col h-full rounded-xl border w-[260px] shrink-0 ${isToday ? 'bg-sky-50/30 border-sky-200' : 'bg-white/40 border-slate-100'} overflow-hidden`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, dayOffset)}>
                       <div className={`py-2.5 px-3 text-center text-sm font-bold border-b ${isToday ? 'bg-sky-100/50 text-sky-700 border-sky-200' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>{getDayName(dayOffset)}</div>
                       <div className="flex-1 p-2 space-y-2 overflow-y-auto custom-scrollbar">
                         {dayTasks.map(task => (
                           <div key={task.id} draggable onDragStart={(e) => handleDragStart(e, task)} className={`p-2.5 rounded-lg border shadow-sm transition-all cursor-move ${task.state === 'complete' ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-slate-200 hover:border-sky-300'}`}>
                             <div className="flex items-start gap-2">
-                              <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state, false)} className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer" />
+                              <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state)} className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer" />
                               <div className="flex-1 min-w-0">
                                 <button onClick={() => openTrelloPopup(task.cardUrl)} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-sky-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
                                 <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>{task.cardName}</div>
@@ -412,49 +406,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Weekly View Modal */}
-      {showWeekly && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
-          <div className="bg-[#fcfbf7] w-full max-w-[98%] h-[72vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/50 ring-1 ring-black/5">
-            <div className="p-6 border-b border-black/5 flex flex-col gap-4 bg-white/60 backdrop-blur-md">
-              <div className="flex justify-between items-center w-full">
-                <h2 className="text-2xl font-bold text-slate-700 tracking-tight">주간 일정</h2>
-                <button onClick={() => setShowWeekly(false)} className="text-slate-400 hover:text-slate-800 text-3xl transition-colors leading-none">&times;</button>
-              </div>
-              <div className="flex gap-2">{TRELLO_BOARDS.map(board => <button key={board.id} onClick={() => openTrelloPopup(board.url)} className="trello-shortcut-btn">{board.name}</button>)}</div>
-            </div>
-            <div className="flex-1 overflow-auto p-6 bg-[#f6f5f0]">
-              <div className="grid grid-cols-7 gap-4 h-full min-w-[1200px]">
-                {[0,1,2,3,4,5,6].map(dayOffset => {
-                  const dayTasks = weeklyTasks.filter(t => t.dayIndex === dayOffset);
-                  const isToday = dayOffset === 0;
-                  return (
-                    <div key={dayOffset} className="flex flex-col h-full group" onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, dayOffset, true)}>
-                      <div className={`p-3 text-center text-sm font-bold rounded-t-xl border-t border-x mb-[-1px] z-10 ${isToday ? 'bg-white border-sky-300 text-sky-600 shadow-sm' : 'bg-[#eaeaea] border-slate-300 text-slate-500'}`}>{getDayName(dayOffset)}</div>
-                      <div className={`flex-1 p-3 space-y-3 overflow-y-auto custom-scrollbar border rounded-b-xl ${isToday ? 'bg-white border-sky-300 ring-4 ring-sky-50' : 'bg-white border-slate-300'}`}>
-                        {dayTasks.map(task => (
-                          <div key={task.id} draggable onDragStart={(e) => handleDragStart(e, task)} className={`bg-white p-3 rounded-xl border border-slate-100 shadow-sm hover:border-sky-300 hover:shadow-md transition-all cursor-move ${task.state === 'complete' ? 'opacity-60 bg-slate-50' : ''}`}>
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-start gap-2">
-                                <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state, true)} className="mt-1.5 w-4 h-4 accent-sky-500 rounded-full cursor-pointer" />
-                                <div className={`text-[15px] font-bold leading-snug break-keep ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                                  <button onClick={() => openTrelloPopup(task.cardUrl)} className="hover:text-sky-600 transition-colors text-left">{task.title}</button>
-                                </div>
-                              </div>
-                              <div className="pl-6 text-[13px] text-slate-500 font-medium truncate">[{task.cardName}]</div>
-                            </div>
-                          </div>
-                        ))}
-                        {dayTasks.length === 0 && <div className="h-full w-full border-2 border-dashed border-transparent hover:border-slate-300 rounded-xl flex items-center justify-center text-slate-400 text-sm opacity-50">가져다 놓기 (Drag & Drop)</div>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

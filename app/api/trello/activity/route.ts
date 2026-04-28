@@ -31,6 +31,7 @@ export async function GET(request: Request) {
             date: a.date,
             memberName: a.memberCreator?.fullName || a.memberCreator?.username || '',
             cardName: a.data?.card?.name || '',
+            cardId: a.data?.card?.shortLink || a.data?.card?.id || '',
             listName: a.data?.list?.name || '',
             listBefore: a.data?.listBefore?.name || '',
             listAfter: a.data?.listAfter?.name || '',
