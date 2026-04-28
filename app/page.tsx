@@ -56,7 +56,10 @@ export default function Home() {
   const navigateTo = useCallback((page: number) => {
     setSlideDirection(page > currentPage ? 1 : -1);
     setCurrentPage(page);
-    if (page === 1 && !boardData) fetchBoardData(TRELLO_BOARDS[selectedBoardIdx].id);
+    if (page === 1) {
+      if (!boardData) fetchBoardData(TRELLO_BOARDS[selectedBoardIdx].id);
+      fetchActivity(TRELLO_BOARDS[selectedBoardIdx].id);
+    }
   }, [currentPage, boardData, selectedBoardIdx]);
 
   // Keyboard navigation
