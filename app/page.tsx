@@ -133,7 +133,7 @@ export default function Home() {
   const fetchTodos = async () => {
     setLoadingTodos(true);
     try {
-      const res = await fetch('/api/trello/checklists?days=3&overdue=true');
+      const res = await fetch('/api/trello/checklists?days=13&overdue=true');
       const data = await res.json();
       if (data.tasks) setTodos(data.tasks);
       if (data.overdueTasks) setOverdueTodos(data.overdueTasks);
@@ -189,21 +189,18 @@ export default function Home() {
               </button>
             </header>
             <div className="dashboard-grid-v2">
-              {/* Left: News - full height */}
               <section className="glass-card news-area">
                 <div className="card-header"><h2 className="card-title">부동산 뉴스</h2><div className="text-xs text-slate-400">bdsplanet</div></div>
                 <div className="card-content">
                   {loadingNews ? <div className="flex justify-center items-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-slate-300"></div></div> : <ul>{news.map((item, idx) => (<li key={idx} className="news-item"><a href={item.link} target="_blank" rel="noopener noreferrer" className="news-link">{item.title}</a><span className="news-meta">{item.media}</span></li>))}</ul>}
                 </div>
               </section>
-              {/* Right top: Calendar */}
               <section className="glass-card calendar-area">
                 <div className="card-header"><h2 className="card-title">스케줄</h2></div>
                 <div className="card-content p-0 overflow-hidden relative">
                   <iframe src="https://calendar.google.com/calendar/embed?src=e1l3et8im3hak9mnto6r64da64%40group.calendar.google.com&ctz=Asia%2FSeoul&mode=AGENDA" style={{ border: 0, width: "100%", height: "100%", position: 'absolute', top: 0, left: 0 }} frameBorder="0" scrolling="no"></iframe>
                 </div>
               </section>
-              {/* Right bottom: LH notices */}
               <section className="glass-card lh-area">
                 <div className="card-header">
                   <h2 className="card-title"><a href="https://apply.lh.or.kr/lhapply/apply/pch/list.do?mi=1076" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 transition-colors">LH 매입공고</a></h2>
@@ -316,7 +313,7 @@ export default function Home() {
                 ) : <div className="flex items-center justify-center h-full"><p className="text-slate-400 text-sm">보드를 선택해주세요.</p></div>}
                 {loadingBoard && boardData && <div className="absolute inset-0 flex items-center justify-center bg-white/30 backdrop-blur-[1px] z-10"><div className="flex flex-col items-center gap-2"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-sky-500"></div><span className="text-xs text-sky-600 font-bold bg-white/80 px-2 py-0.5 rounded shadow-sm">보드 전환 중...</span></div></div>}
               </div>
-              {/* Activity Panel - Fixed on right */}
+              {/* Activity Panel */}
               <div className="w-[280px] shrink-0 flex flex-col rounded-xl border border-slate-200 bg-slate-50/80 overflow-hidden">
                 <div className="px-3 py-2.5 border-b border-slate-300 bg-slate-200/80 flex items-center justify-between">
                   <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-1.5"><Clock size={14} /> Activity</h3>
@@ -350,7 +347,7 @@ export default function Home() {
           <div className="bg-[#fcfbf7] w-full max-w-[95%] h-[75vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/50 ring-1 ring-black/5">
             <div className="p-5 border-b border-black/5 flex justify-between items-center bg-white/60 backdrop-blur-md">
               <div className="flex items-center gap-3">
-                <h2 className="text-xl font-bold text-slate-700 tracking-tight flex items-center gap-2"><CheckSquare size={20} className="text-blue-500" /> 할일 일정 (기한지남 + 오늘 ~ 3일)</h2>
+                <h2 className="text-xl font-bold text-slate-700 tracking-tight flex items-center gap-2"><CheckSquare size={20} className="text-blue-500" /> 할일 일정 (기한지남 + 오늘 ~ 2주)</h2>
                 <button className="refresh-btn text-xs bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded text-slate-600 transition-colors" onClick={fetchTodos} disabled={loadingTodos}>{loadingTodos ? '...' : '새로고침'}</button>
               </div>
               <button onClick={() => setShowChecklist(false)} className="text-slate-400 hover:text-slate-800 text-3xl transition-colors leading-none">&times;</button>
@@ -376,7 +373,7 @@ export default function Home() {
                     </div>
                   </div>
                 )}
-                {[0,1,2,3].map(dayOffset => {
+                {Array.from({ length: 14 }, (_, i) => i).map(dayOffset => {
                   const dayTasks = todos.filter(t => t.dayIndex === dayOffset);
                   const isToday = dayOffset === 0;
                   return (
@@ -394,7 +391,7 @@ export default function Home() {
                             </div>
                           </div>
                         ))}
-                        {dayTasks.length === 0 && <div className="text-center text-slate-400 text-xs py-4 flex items-center justify-center h-full opacity-50 border-2 border-dashed border-transparent hover:border-slate-300 rounded-lg">가져다 놓기 (Drag & Drop)</div>}
+                        {dayTasks.length === 0 && <div className="text-center text-slate-400 text-xs py-4 flex items-center justify-center h-full opacity-50 border-2 border-dashed border-transparent hover:border-slate-300 rounded-lg">가져다 놓기</div>}
                       </div>
                     </div>
                   );
@@ -405,13 +402,6 @@ export default function Home() {
           </div>
         </div>
       )}
-
-    </div>
-  );
-}
-        </div>
-      )}
-
     </div>
   );
 }
