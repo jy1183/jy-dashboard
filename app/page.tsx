@@ -371,8 +371,8 @@ export default function Home() {
               </div>
               {/* Activity Panel - Fixed on right */}
               <div className="w-[280px] shrink-0 flex flex-col rounded-xl border border-slate-200 bg-slate-50/80 overflow-hidden">
-                <div className="px-3 py-2.5 border-b border-slate-200 bg-white/60 flex items-center justify-between">
-                  <h3 className="text-sm font-bold text-slate-700 flex items-center gap-1.5"><Clock size={14} /> Activity</h3>
+                <div className="px-3 py-2.5 border-b border-slate-300 bg-slate-200/80 flex items-center justify-between">
+                  <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-1.5"><Clock size={14} /> Activity</h3>
                   <button onClick={() => fetchActivity(TRELLO_BOARDS[selectedBoardIdx].id)} className="text-slate-400 hover:text-sky-500 transition-colors" title="새로고침"><RefreshCw size={12} className={loadingActivity ? 'animate-spin' : ''} /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -382,12 +382,12 @@ export default function Home() {
                     <div className="text-center py-8 text-slate-400 text-xs">활동 내역 없음</div>
                   ) : activityData.map((a) => (
                     <div key={a.id} className="px-3 py-2.5 border-b border-slate-100 hover:bg-white/60 transition-colors">
-                      <div className="text-[12px] text-slate-500"><span className="font-bold text-slate-700">{a.memberName}</span> <span className="text-sky-600">{getActivityText(a)}</span></div>
-                      {a.cardName && <div className="text-[11px] text-slate-600 mt-0.5 font-semibold truncate">{a.cardName}</div>}
-                      {a.text && <div className="text-[11px] text-slate-400 mt-0.5 line-clamp-2">{a.text}</div>}
-                      {a.listAfter && a.listBefore && <div className="text-[10px] text-slate-400 mt-0.5">{a.listBefore} → {a.listAfter}</div>}
-                      {a.checkItem && <div className="text-[10px] text-slate-400 mt-0.5">{a.checkItem} ({a.checkItemState === 'complete' ? '완료' : '미완료'})</div>}
-                      <div className="text-[10px] text-slate-300 mt-1">{getTimeAgo(a.date)}</div>
+                      <div className="text-[13px] text-slate-500"><span className="font-bold text-slate-700">{a.memberName}</span> <span className="text-sky-600">{getActivityText(a)}</span></div>
+                      {a.cardName && <div className="text-[12px] text-slate-600 mt-0.5 font-semibold truncate">{a.cardName}</div>}
+                      {a.text && <div className="text-[12px] text-slate-400 mt-0.5 line-clamp-2">{a.text}</div>}
+                      {a.listAfter && a.listBefore && <div className="text-[11px] text-slate-400 mt-0.5">{a.listBefore} → {a.listAfter}</div>}
+                      {a.checkItem && <div className="text-[11px] text-slate-400 mt-0.5">{a.checkItem} ({a.checkItemState === 'complete' ? '완료' : '미완료'})</div>}
+                      <div className="text-[11px] text-slate-300 mt-1">{getTimeAgo(a.date)}</div>
                     </div>
                   ))}
                 </div>
