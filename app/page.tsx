@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ExternalLink, RefreshCw, ChevronRight, LayoutDashboard, Trello } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, ChevronRight, Trello } from 'lucide-react';
 
 // Board config
 const TRELLO_BOARDS = [
@@ -220,32 +220,6 @@ export default function Home() {
 
   return (
     <div className="w-screen h-screen overflow-hidden flex flex-col">
-      {/* ===== PAGE INDICATOR / NAV BAR ===== */}
-      <div className="fixed top-3 right-4 z-40 flex items-center gap-2">
-        <button
-          onClick={() => navigateTo(0)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm border ${
-            currentPage === 0
-              ? 'bg-white border-sky-300 text-sky-600 shadow-sky-100'
-              : 'bg-white/70 border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300'
-          }`}
-        >
-          <LayoutDashboard size={13} />
-          대시보드
-        </button>
-        <button
-          onClick={() => navigateTo(1)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm border ${
-            currentPage === 1
-              ? 'bg-white border-sky-300 text-sky-600 shadow-sky-100'
-              : 'bg-white/70 border-slate-200 text-slate-400 hover:text-slate-600 hover:border-slate-300'
-          }`}
-        >
-          <Trello size={13} />
-          트렐로 보드
-        </button>
-      </div>
-
       {/* ===== SLIDE PAGES ===== */}
       <AnimatePresence initial={false} custom={slideDirection} mode="popLayout">
         {currentPage === 0 && (
@@ -265,8 +239,9 @@ export default function Home() {
               <h1 className="dashboard-title m-0">WELLASSET BOARD</h1>
               <button
                 onClick={() => navigateTo(1)}
-                className="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-sky-500 transition-colors"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-sky-50 border border-sky-200 text-sky-600 hover:bg-sky-100 hover:border-sky-300 transition-all shadow-sm"
               >
+                <Trello size={15} />
                 트렐로 보드 <ChevronRight size={14} />
               </button>
             </header>
@@ -481,7 +456,7 @@ export default function Home() {
                   onClick={() => navigateTo(0)}
                   className="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-sky-500 transition-colors"
                 >
-                  <ArrowLeft size={14} /> 대시보드
+                  <ArrowLeft size={15} /> 대시보드
                 </button>
                 <h1 className="text-xl font-extrabold text-slate-700 tracking-tight">
                   {boardData?.boardName || '트렐로 보드'}
