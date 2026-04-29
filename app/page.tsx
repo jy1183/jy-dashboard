@@ -61,9 +61,10 @@ export default function Home() {
     }
   }, [currentPage, boardData, selectedBoardIdx]);
 
-  // Keyboard navigation
+  // Keyboard navigation + ESC to close checklist
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showChecklist) { setShowChecklist(false); return; }
       if (showChecklist) return;
       if (e.key === 'ArrowRight' && currentPage === 0) navigateTo(1);
       if (e.key === 'ArrowLeft' && currentPage === 1) navigateTo(0);
@@ -343,7 +344,7 @@ export default function Home() {
 
       {/* Checklist Modal */}
       {showChecklist && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={(e) => { if (e.target === e.currentTarget) setShowChecklist(false); }}>
           <div className="bg-[#fcfbf7] w-full max-w-[95%] h-[75vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-white/50 ring-1 ring-black/5">
             <div className="p-5 border-b border-black/5 flex justify-between items-center bg-white/60 backdrop-blur-md">
               <div className="flex items-center gap-3">
