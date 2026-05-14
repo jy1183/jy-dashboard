@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ExternalLink, RefreshCw, ChevronRight, Trello, Bell, Link, Clock, CheckSquare, Plus, MessageCircle, AlignLeft, Send, Paperclip } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
 
 const TRELLO_BOARDS = [
   { id: 'zHDWraQl', name: '동천동', url: 'https://trello.com/b/zHDWraQl' },
@@ -629,7 +630,7 @@ export default function Home() {
                       {cardDetails.desc ? (
                         <>
                           <div className={`overflow-hidden prose prose-sm max-w-none transition-all duration-300 ${isDescriptionExpanded ? '' : 'line-clamp-4 max-h-[6rem]'}`}>
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{cardDetails.desc}</ReactMarkdown>
+                            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{cardDetails.desc}</ReactMarkdown>
                           </div>
                           {cardDetails.desc.length > 150 && (
                             <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="mt-2 text-sky-500 font-bold text-[12px] hover:underline">
@@ -741,7 +742,7 @@ export default function Home() {
                               </div>
                             ) : (
                               <div className="text-[14px] text-slate-600 leading-relaxed prose prose-sm max-w-none">
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.data.text}</ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{comment.data.text}</ReactMarkdown>
                               </div>
                             )}
                           </div>

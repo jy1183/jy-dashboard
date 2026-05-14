@@ -19,7 +19,7 @@ export default function RootLayout({
         <html lang="ko">
             <body className={inter.className}>
                 {children}
-                <Script src="https://js.live.net/v7.2/OneDrive.js" strategy="lazyOnload" />
+                <Script src="https://js.live.net/v7.2/OneDrive.js" strategy="beforeInteractive" />
             </body>
         </html>
     );
