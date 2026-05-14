@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,7 +17,10 @@ export default function RootLayout({
 }) {
     return (
         <html lang="ko">
-            <body className={inter.className}>{children}</body>
+            <body className={inter.className}>
+                {children}
+                <Script src="https://js.live.net/v7.2/OneDrive.js" strategy="lazyOnload" />
+            </body>
         </html>
     );
 }

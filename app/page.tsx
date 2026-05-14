@@ -205,6 +205,36 @@ export default function Home() {
     } catch (e) { console.error('Failed to edit comment', e); }
   };
 
+  const handleOneDriveAttach = () => {
+    if (typeof (window as any).OneDrive === 'undefined') {
+      alert('OneDrive 스크립트가 아직 로드되지 않았습니다.');
+      return;
+    }
+    (window as any).OneDrive.open({
+      clientId: "f05fbc59-1d18-49f4-a6c3-d2315266af5b",
+      action: "query",
+      multiSelect: false,
+      advanced: { redirectUri: window.location.origin },
+      success: async function (files: any) {
+        if (files && files.value && files.value.length > 0) {
+          const file = files.value[0];
+          try {
+            await fetch('/api/trello/card/attachment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ cardId: selectedCardId, name: file.name, url: file.webUrl })
+            });
+            const res = await fetch(`/api/trello/card?cardId=${selectedCardId}`);
+            const data = await res.json();
+            setCardDetails(data);
+          } catch (e) { console.error('Failed to attach OneDrive file', e); }
+        }
+      },
+      cancel: function () { console.log('OneDrive picker cancelled'); },
+      error: function (e: any) { console.error('OneDrive picker error', e); alert('OneDrive 연동 중 오류가 발생했습니다.'); }
+    });
+  };
+
   const handleAddCard = async (listId: string) => {
     if (!newCardTitle.trim()) return;
     try {
@@ -568,9 +598,15 @@ export default function Home() {
                   </div>
 
                   {/* Attachments */}
-                  {cardDetails.attachments && cardDetails.attachments.length > 0 && (
-                    <div>
-                      <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-2 mb-3"><Paperclip size={16} /> 첨부파일</h3>
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-2"><Paperclip size={16} /> 첨부파일</h3>
+                      <button onClick={handleOneDriveAttach} className="text-[12px] bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-colors shadow-sm">
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M19.1 9.4c-.4-3.3-3.2-5.9-6.6-5.9-2.6 0-4.9 1.5-6 3.7-1.1-1.1-2.9-1.5-4.5-.8C.8 7.3 0 8.6 0 10c0 2.2 1.8 4 4 4h15c2.2 0 4-1.8 4-4 0-2.1-1.7-3.9-3.9-4.6z"/></svg>
+                        OneDrive 파일 첨부
+                      </button>
+                    </div>
+                    {cardDetails.attachments && cardDetails.attachments.length > 0 ? (
                       <div className="grid grid-cols-2 gap-3">
                         {cardDetails.attachments.map((att: any) => (
                           <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2.5 bg-white border border-slate-200 rounded-lg hover:border-sky-300 hover:shadow-sm transition-all group">
@@ -584,8 +620,10 @@ export default function Home() {
                           </a>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="text-[13px] text-slate-400 italic text-center py-4 bg-slate-100/50 rounded-xl border border-slate-200 border-dashed">첨부파일이 없습니다.</div>
+                    )}
+                  </div>
 
                   {/* Checklists */}
                   {cardDetails.checklists && cardDetails.checklists.length > 0 && (
