@@ -28,3 +28,28 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Failed to add comment' }, { status: 500 });
     }
 }
+
+export async function PUT(request: Request) {
+    if (!TRELLO_API_KEY || !TRELLO_API_TOKEN) {
+        return NextResponse.json({ error: 'Trello API credentials not configured' }, { status: 500 });
+    }
+
+    try {
+        const body = await request.json();
+        const { actionId, text } = body;
+
+        if (!actionId || !text) {
+            return NextResponse.json({ error: 'actionId and text are required' }, { status: 400 });
+        }
+
+        const res = await axios.put(
+            `https://api.trello.com/1/actions/${actionId}?key=${TRELLO_API_KEY}&token=${TRELLO_API_TOKEN}`,
+            { text }
+        );
+
+        return NextResponse.json(res.data);
+    } catch (error: any) {
+        console.error('Error updating comment:', error.response?.data || error.message);
+        return NextResponse.json({ error: 'Failed to update comment' }, { status: 500 });
+    }
+}

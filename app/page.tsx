@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, ExternalLink, RefreshCw, ChevronRight, Trello, Bell, Link, Clock, CheckSquare, Plus, MessageCircle, AlignLeft, Send, Paperclip } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const TRELLO_BOARDS = [
   { id: 'zHDWraQl', name: '동천동', url: 'https://trello.com/b/zHDWraQl' },
@@ -48,6 +50,10 @@ export default function Home() {
   // New Add Card states
   const [addingCardListId, setAddingCardListId] = useState<string | null>(null);
   const [newCardTitle, setNewCardTitle] = useState('');
+  
+  // Comment Edit states
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState('');
 
   useEffect(() => { fetchNews(); fetchTodos(); fetchNotices(); }, []);
 
@@ -183,6 +189,22 @@ export default function Home() {
     } catch (e) { console.error('Failed to add comment', e); }
   };
 
+  const handleEditComment = async (actionId: string) => {
+    if (!editingCommentText.trim() || !selectedCardId) return;
+    try {
+      await fetch('/api/trello/card/comment', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ actionId, text: editingCommentText })
+      });
+      setEditingCommentId(null);
+      setEditingCommentText('');
+      const res = await fetch(`/api/trello/card?cardId=${selectedCardId}`);
+      const data = await res.json();
+      setCardDetails(data);
+    } catch (e) { console.error('Failed to edit comment', e); }
+  };
+
   const handleAddCard = async (listId: string) => {
     if (!newCardTitle.trim()) return;
     try {
@@ -201,8 +223,35 @@ export default function Home() {
     const newState = currentState === 'complete' ? 'incomplete' : 'complete';
     const updateTask = (t: any) => t.id === taskId ? { ...t, state: newState } : t;
     setTodos(prev => prev.map(updateTask));
+    
+    // Optimistic update for modal cardDetails
+    if (cardDetails && cardDetails.id === cardId) {
+      setCardDetails((prev: any) => {
+        if (!prev || !prev.checklists) return prev;
+        const newChecklists = prev.checklists.map((cl: any) => ({
+          ...cl,
+          checkItems: cl.checkItems.map((item: any) => item.id === taskId ? { ...item, state: newState } : item)
+        }));
+        return { ...prev, checklists: newChecklists };
+      });
+    }
+
     try { await fetch('/api/trello/checklists', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cardId, itemId: taskId, state: newState }) }); }
-    catch (e) { console.error(e); const revertTask = (t: any) => t.id === taskId ? { ...t, state: currentState } : t; setTodos(prev => prev.map(revertTask)); }
+    catch (e) { 
+      console.error(e); 
+      const revertTask = (t: any) => t.id === taskId ? { ...t, state: currentState } : t; 
+      setTodos(prev => prev.map(revertTask)); 
+      if (cardDetails && cardDetails.id === cardId) {
+        setCardDetails((prev: any) => {
+          if (!prev || !prev.checklists) return prev;
+          const newChecklists = prev.checklists.map((cl: any) => ({
+            ...cl,
+            checkItems: cl.checkItems.map((item: any) => item.id === taskId ? { ...item, state: currentState } : item)
+          }));
+          return { ...prev, checklists: newChecklists };
+        });
+      }
+    }
   };
 
   const handleDragStart = (e: React.DragEvent, task: any) => { e.dataTransfer.setData('task', JSON.stringify(task)); };
@@ -509,8 +558,12 @@ export default function Home() {
                   {/* Description */}
                   <div>
                     <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-2 mb-3"><AlignLeft size={16} /> 설명</h3>
-                    <div className="bg-white p-4 rounded-xl border border-slate-200 text-[14px] text-slate-600 whitespace-pre-wrap leading-relaxed shadow-sm">
-                      {cardDetails.desc || <span className="text-slate-400 italic">설명이 없습니다.</span>}
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 text-[14px] text-slate-600 leading-relaxed shadow-sm overflow-hidden prose prose-sm max-w-none">
+                      {cardDetails.desc ? (
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{cardDetails.desc}</ReactMarkdown>
+                      ) : (
+                        <span className="text-slate-400 italic">설명이 없습니다.</span>
+                      )}
                     </div>
                   </div>
 
@@ -578,8 +631,23 @@ export default function Home() {
                         <div key={comment.id} className="flex gap-3">
                           <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500 text-[13px] shrink-0 uppercase">{comment.memberCreator.fullName.charAt(0)}</div>
                           <div className="flex-1 bg-white p-3 rounded-xl rounded-tl-none border border-slate-200 shadow-sm">
-                            <div className="flex items-center gap-2 mb-1"><span className="text-[13px] font-bold text-slate-700">{comment.memberCreator.fullName}</span><span className="text-[11px] text-slate-400">{getTimeAgo(comment.date)}</span></div>
-                            <p className="text-[14px] text-slate-600 whitespace-pre-wrap leading-relaxed">{comment.data.text}</p>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2"><span className="text-[13px] font-bold text-slate-700">{comment.memberCreator.fullName}</span><span className="text-[11px] text-slate-400">{getTimeAgo(comment.date)}</span></div>
+                              <button onClick={() => { setEditingCommentId(comment.id); setEditingCommentText(comment.data.text); }} className="text-[11px] text-slate-400 hover:text-sky-500 transition-colors">수정</button>
+                            </div>
+                            {editingCommentId === comment.id ? (
+                              <div className="mt-2 flex flex-col gap-2">
+                                <textarea value={editingCommentText} onChange={e => setEditingCommentText(e.target.value)} className="w-full p-2 text-[13px] border border-slate-200 rounded focus:border-sky-400 outline-none resize-none" rows={2} />
+                                <div className="flex gap-2 justify-end">
+                                  <button onClick={() => setEditingCommentId(null)} className="text-[11px] px-2 py-1 text-slate-500 hover:bg-slate-100 rounded">취소</button>
+                                  <button onClick={() => handleEditComment(comment.id)} className="text-[11px] px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white rounded">저장</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-[14px] text-slate-600 leading-relaxed prose prose-sm max-w-none">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{comment.data.text}</ReactMarkdown>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
