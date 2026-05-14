@@ -54,6 +54,11 @@ export default function Home() {
   // Comment Edit states
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentText, setEditingCommentText] = useState('');
+  
+  // Description Toggle & Checklist Add
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [addingChecklistId, setAddingChecklistId] = useState<string | null>(null);
+  const [newCheckItemName, setNewCheckItemName] = useState('');
 
   useEffect(() => { fetchNews(); fetchTodos(); fetchNotices(); }, []);
 
@@ -231,7 +236,7 @@ export default function Home() {
         }
       },
       cancel: function () { console.log('OneDrive picker cancelled'); },
-      error: function (e: any) { console.error('OneDrive picker error', e); alert('OneDrive 연동 중 오류가 발생했습니다.'); }
+      error: function (e: any) { console.error('OneDrive picker error', e); alert('OneDrive 연동 오류: ' + (e?.message || JSON.stringify(e))); }
     });
   };
 
@@ -247,6 +252,38 @@ export default function Home() {
       setNewCardTitle('');
       fetchBoardData(TRELLO_BOARDS[selectedBoardIdx].id); // Refresh board
     } catch (e) { console.error('Failed to add card', e); }
+  };
+
+  const handleAddCheckItem = async (checklistId: string) => {
+    if (!newCheckItemName.trim()) return;
+    try {
+      await fetch('/api/trello/checklists/item', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ checklistId, name: newCheckItemName })
+      });
+      setAddingChecklistId(null);
+      setNewCheckItemName('');
+      if (selectedCardId) {
+        const res = await fetch(`/api/trello/card?cardId=${selectedCardId}`);
+        const data = await res.json();
+        setCardDetails(data);
+      }
+    } catch (e) { console.error('Failed to add check item', e); }
+  };
+
+  const handleDeleteCheckItem = async (checklistId: string, itemId: string) => {
+    if (!confirm('항목을 삭제하시겠습니까?')) return;
+    try {
+      await fetch(`/api/trello/checklists/item?checklistId=${checklistId}&itemId=${itemId}`, {
+        method: 'DELETE'
+      });
+      if (selectedCardId) {
+        const res = await fetch(`/api/trello/card?cardId=${selectedCardId}`);
+        const data = await res.json();
+        setCardDetails(data);
+      }
+    } catch (e) { console.error('Failed to delete check item', e); }
   };
 
   const handleCheck = async (taskId: string, cardId: string, currentState: string) => {
@@ -475,7 +512,7 @@ export default function Home() {
                   ) : activityData.map((a) => (
                     <div key={a.id} className="px-3 py-2.5 border-b border-slate-100 hover:bg-white/60 transition-colors">
                       <div className="text-[13px] text-slate-500"><span className="font-bold text-slate-700">{a.memberName}</span> <span className="text-sky-600">{getActivityText(a)}</span></div>
-                      {a.cardName && <div className="text-[12px] text-slate-600 mt-0.5 font-semibold truncate cursor-pointer hover:text-sky-600 transition-colors" onClick={() => { if (a.cardId) openTrelloPopup('https://trello.com/c/' + a.cardId); }}>{a.cardName}</div>}
+                      {a.cardName && <div className="text-[12px] text-slate-600 mt-0.5 font-semibold truncate cursor-pointer hover:text-sky-600 transition-colors" onClick={() => { if (a.cardId) openCardModal(a.cardId); }}>{a.cardName}</div>}
                       {a.text && <div className="text-[12px] text-slate-400 mt-0.5 line-clamp-2">{a.text}</div>}
                       {a.listAfter && a.listBefore && <div className="text-[11px] text-slate-400 mt-0.5">{a.listBefore} → {a.listAfter}</div>}
                       {a.checkItem && <div className="text-[11px] text-slate-400 mt-0.5">{a.checkItem} ({a.checkItemState === 'complete' ? '완료' : '미완료'})</div>}
@@ -511,7 +548,7 @@ export default function Home() {
                           <div className="flex items-start gap-2">
                             <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state)} className="mt-1 w-4 h-4 accent-red-500 rounded cursor-pointer" />
                             <div className="flex-1 min-w-0">
-                              <button onClick={() => openTrelloPopup(task.cardUrl)} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-red-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
+                              <button onClick={() => { openCardModal(task.cardId); setShowChecklist(false); }} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-red-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
                               <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>{task.cardName}</div>
                               {task.due && <div className="text-[10px] text-red-500 mt-0.5 font-semibold">{new Date(task.due).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}</div>}
                             </div>
@@ -533,7 +570,7 @@ export default function Home() {
                             <div className="flex items-start gap-2">
                               <input type="checkbox" checked={task.state === 'complete'} onChange={() => handleCheck(task.id, task.cardId, task.state)} className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer" />
                               <div className="flex-1 min-w-0">
-                                <button onClick={() => openTrelloPopup(task.cardUrl)} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-sky-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
+                                <button onClick={() => { openCardModal(task.cardId); setShowChecklist(false); }} className={`block text-left w-full text-[13px] font-bold leading-tight hover:text-sky-600 transition-colors ${task.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.title}</button>
                                 <div className="text-[11px] text-slate-500 mt-1 truncate" title={task.cardName}>{task.cardName}</div>
                               </div>
                             </div>
@@ -588,9 +625,18 @@ export default function Home() {
                   {/* Description */}
                   <div>
                     <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-2 mb-3"><AlignLeft size={16} /> 설명</h3>
-                    <div className="bg-white p-4 rounded-xl border border-slate-200 text-[14px] text-slate-600 leading-relaxed shadow-sm overflow-hidden prose prose-sm max-w-none">
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 text-[14px] text-slate-600 leading-relaxed shadow-sm relative">
                       {cardDetails.desc ? (
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{cardDetails.desc}</ReactMarkdown>
+                        <>
+                          <div className={`overflow-hidden prose prose-sm max-w-none transition-all duration-300 ${isDescriptionExpanded ? '' : 'line-clamp-4 max-h-[6rem]'}`}>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{cardDetails.desc}</ReactMarkdown>
+                          </div>
+                          {cardDetails.desc.length > 150 && (
+                            <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="mt-2 text-sky-500 font-bold text-[12px] hover:underline">
+                              {isDescriptionExpanded ? '접기' : '더보기...'}
+                            </button>
+                          )}
+                        </>
                       ) : (
                         <span className="text-slate-400 italic">설명이 없습니다.</span>
                       )}
@@ -608,7 +654,7 @@ export default function Home() {
                     </div>
                     {cardDetails.attachments && cardDetails.attachments.length > 0 ? (
                       <div className="grid grid-cols-2 gap-3">
-                        {cardDetails.attachments.map((att: any) => (
+                        {cardDetails.attachments.slice().sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 4).map((att: any) => (
                           <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2.5 bg-white border border-slate-200 rounded-lg hover:border-sky-300 hover:shadow-sm transition-all group">
                             <div className="w-8 h-8 rounded bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
                               <Link size={14} />
@@ -643,13 +689,25 @@ export default function Home() {
                             </div>
                             <div className="space-y-1.5 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
                               {cl.checkItems.map((item: any) => (
-                                <div key={item.id} className={`flex items-start gap-2.5 p-2 rounded hover:bg-slate-50 transition-colors ${item.state === 'complete' ? 'opacity-60' : ''}`}>
+                                <div key={item.id} className={`group flex items-start gap-2.5 p-2 rounded hover:bg-slate-50 transition-colors ${item.state === 'complete' ? 'opacity-60' : ''}`}>
                                   <input type="checkbox" checked={item.state === 'complete'} onChange={() => handleCheck(item.id, cardDetails.id, item.state)} className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer shrink-0" />
                                   <div className="flex-1 min-w-0">
                                     <p className={`text-[14px] leading-tight ${item.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}`}>{item.name}</p>
                                   </div>
+                                  <button onClick={() => handleDeleteCheckItem(cl.id, item.id)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition-all px-1 text-[16px] leading-none" title="삭제">&times;</button>
                                 </div>
                               ))}
+                              {addingChecklistId === cl.id ? (
+                                <div className="p-2 border-t border-slate-100 flex flex-col gap-2">
+                                  <input autoFocus type="text" value={newCheckItemName} onChange={e => setNewCheckItemName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddCheckItem(cl.id); }} className="w-full text-[13px] px-2 py-1.5 border border-slate-300 rounded focus:border-sky-400 outline-none" placeholder="항목 이름..." />
+                                  <div className="flex justify-end gap-2">
+                                    <button onClick={() => setAddingChecklistId(null)} className="text-[11px] px-2 py-1 text-slate-500 hover:bg-slate-100 rounded">취소</button>
+                                    <button onClick={() => handleAddCheckItem(cl.id)} className="text-[11px] px-3 py-1 bg-sky-500 text-white hover:bg-sky-600 rounded">추가</button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <button onClick={() => { setAddingChecklistId(cl.id); setNewCheckItemName(''); }} className="w-full text-left px-3 py-2 text-[12px] font-semibold text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded transition-colors flex items-center gap-1.5"><Plus size={13} /> 항목 추가</button>
+                              )}
                             </div>
                           </div>
                         );
