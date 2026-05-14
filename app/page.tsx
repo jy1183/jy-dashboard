@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, ExternalLink, RefreshCw, ChevronRight, Trello, Bell, Link, Clock, CheckSquare } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, ChevronRight, Trello, Bell, Link, Clock, CheckSquare, Plus, MessageCircle, AlignLeft, Send, Paperclip } from 'lucide-react';
 
 const TRELLO_BOARDS = [
   { id: 'zHDWraQl', name: '동천동', url: 'https://trello.com/b/zHDWraQl' },
@@ -38,6 +38,16 @@ export default function Home() {
   const [activityData, setActivityData] = useState<any[]>([]);
   const [loadingActivity, setLoadingActivity] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
+
+  // New Modal states
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [cardDetails, setCardDetails] = useState<any>(null);
+  const [loadingCard, setLoadingCard] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  
+  // New Add Card states
+  const [addingCardListId, setAddingCardListId] = useState<string | null>(null);
+  const [newCardTitle, setNewCardTitle] = useState('');
 
   useEffect(() => { fetchNews(); fetchTodos(); fetchNotices(); }, []);
 
@@ -142,6 +152,50 @@ export default function Home() {
   };
   const openChecklistView = () => { fetchTodos(); setShowChecklist(true); };
   const openTrelloPopup = (url: string) => { const w = window.screen.width * 0.7; const h = window.screen.height * 0.7; const l = (window.screen.width - w) / 2; const t = (window.screen.height - h) / 2; window.open(url, '_blank', 'width=' + w + ',height=' + h + ',left=' + l + ',top=' + t + ',scrollbars=yes,resizable=yes'); };
+
+  const openCardModal = async (cardId: string) => {
+    setSelectedCardId(cardId);
+    setLoadingCard(true);
+    setCardDetails(null);
+    setCommentText('');
+    try {
+      const res = await fetch(`/api/trello/card?cardId=${cardId}`);
+      const data = await res.json();
+      setCardDetails(data);
+    } catch (e) { console.error('Failed to fetch card:', e); }
+    finally { setLoadingCard(false); }
+  };
+
+  const handleAddComment = async () => {
+    if (!commentText.trim() || !selectedCardId) return;
+    try {
+      await fetch('/api/trello/card/comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cardId: selectedCardId, text: commentText })
+      });
+      setCommentText('');
+      // Reload card details
+      const res = await fetch(`/api/trello/card?cardId=${selectedCardId}`);
+      const data = await res.json();
+      setCardDetails(data);
+      fetchActivity(TRELLO_BOARDS[selectedBoardIdx].id); // Refresh activity
+    } catch (e) { console.error('Failed to add comment', e); }
+  };
+
+  const handleAddCard = async (listId: string) => {
+    if (!newCardTitle.trim()) return;
+    try {
+      await fetch('/api/trello/card', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idList: listId, name: newCardTitle })
+      });
+      setAddingCardListId(null);
+      setNewCardTitle('');
+      fetchBoardData(TRELLO_BOARDS[selectedBoardIdx].id); // Refresh board
+    } catch (e) { console.error('Failed to add card', e); }
+  };
 
   const handleCheck = async (taskId: string, cardId: string, currentState: string) => {
     const newState = currentState === 'complete' ? 'incomplete' : 'complete';
@@ -283,7 +337,7 @@ export default function Home() {
                         </div>
                         <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
                           {list.cards.map((card: any) => (
-                            <div key={card.id} className="kanban-card bg-white rounded-lg border border-slate-150 shadow-sm hover:shadow-md hover:border-sky-200 transition-all cursor-pointer group" onClick={() => openTrelloPopup(card.shortUrl || card.url)}>
+                            <div key={card.id} className="kanban-card bg-white rounded-lg border border-slate-150 shadow-sm hover:shadow-md hover:border-sky-200 transition-all cursor-pointer group" onClick={() => openCardModal(card.id)}>
                               {card.labels && card.labels.length > 0 && <div className="flex flex-wrap gap-1 px-3 pt-2.5">{card.labels.map((label: any) => <span key={label.id} className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${labelColor(label.color)}`} title={label.name}>{label.name || '   '}</span>)}</div>}
                               <div className="px-3 py-2 overflow-hidden">
                                 <p className="text-[13px] font-semibold text-slate-700 leading-snug group-hover:text-sky-600 transition-colors" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
@@ -308,6 +362,20 @@ export default function Home() {
                           ))}
                           {list.cards.length === 0 && <div className="text-center text-slate-400 text-xs py-6 opacity-50">카드 없음</div>}
                         </div>
+                        {/* Add Card Section */}
+                        {addingCardListId === list.id ? (
+                          <div className="px-3 py-2 bg-slate-100/50 border-t border-slate-200 flex flex-col gap-2">
+                            <input autoFocus type="text" value={newCardTitle} onChange={e => setNewCardTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') handleAddCard(list.id); }} className="text-[13px] px-2.5 py-1.5 border border-slate-300 rounded focus:outline-none focus:border-sky-500" placeholder="카드 제목 입력..." />
+                            <div className="flex items-center justify-between">
+                              <button onClick={() => handleAddCard(list.id)} className="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1 rounded text-xs font-bold transition-colors">추가</button>
+                              <button onClick={() => { setAddingCardListId(null); setNewCardTitle(''); }} className="text-slate-500 hover:text-slate-700 text-xs px-2 transition-colors">취소</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="p-2 border-t border-slate-100 bg-white/40">
+                            <button onClick={() => { setAddingCardListId(list.id); setNewCardTitle(''); }} className="w-full py-1.5 text-xs font-semibold text-slate-500 hover:bg-slate-200/50 hover:text-slate-700 rounded flex items-center justify-center gap-1.5 transition-colors"><Plus size={14} /> 카드 추가</button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -400,6 +468,129 @@ export default function Home() {
               </div>
               {loadingTodos && <div className="absolute inset-0 flex justify-center items-center bg-white/10 backdrop-blur-[1px] z-10"><div className="flex flex-col items-center gap-2"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500"></div><div className="text-xs font-bold text-sky-600 bg-white/80 px-2 py-0.5 rounded shadow-sm">업데이트 중...</div></div></div>}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Card Detail Modal */}
+      {selectedCardId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4" onClick={(e) => { if (e.target === e.currentTarget) setSelectedCardId(null); }}>
+          <div className="bg-white w-full max-w-2xl h-[80vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden relative">
+            <button onClick={() => setSelectedCardId(null)} className="absolute top-4 right-5 text-slate-400 hover:text-slate-800 text-2xl transition-colors leading-none z-10">&times;</button>
+            {loadingCard ? (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-sky-500"></div>
+                <span className="text-sm text-slate-400 font-medium">카드 정보 불러오는 중...</span>
+              </div>
+            ) : cardDetails ? (
+              <>
+                <div className="p-6 border-b border-slate-100 flex-shrink-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Trello size={16} className="text-sky-500" />
+                    <span className="text-xs font-bold text-slate-400">IN LIST</span>
+                  </div>
+                  <h2 className="text-xl font-extrabold text-slate-800 leading-tight pr-8">{cardDetails.name}</h2>
+                  {cardDetails.labels && cardDetails.labels.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-3">
+                      {cardDetails.labels.map((label: any) => (
+                        <span key={label.id} className={`text-[11px] font-bold px-2 py-1 rounded border ${labelColor(label.color)}`}>{label.name || label.color}</span>
+                      ))}
+                    </div>
+                  )}
+                  {cardDetails.shortUrl && (
+                    <div className="mt-3">
+                      <a href={cardDetails.shortUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[12px] text-sky-500 hover:text-sky-700 hover:underline">
+                        <ExternalLink size={12} /> 트렐로에서 열기
+                      </a>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar bg-slate-50">
+                  {/* Description */}
+                  <div>
+                    <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-2 mb-3"><AlignLeft size={16} /> 설명</h3>
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 text-[14px] text-slate-600 whitespace-pre-wrap leading-relaxed shadow-sm">
+                      {cardDetails.desc || <span className="text-slate-400 italic">설명이 없습니다.</span>}
+                    </div>
+                  </div>
+
+                  {/* Attachments */}
+                  {cardDetails.attachments && cardDetails.attachments.length > 0 && (
+                    <div>
+                      <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-2 mb-3"><Paperclip size={16} /> 첨부파일</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        {cardDetails.attachments.map((att: any) => (
+                          <a key={att.id} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-2.5 bg-white border border-slate-200 rounded-lg hover:border-sky-300 hover:shadow-sm transition-all group">
+                            <div className="w-8 h-8 rounded bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                              <Link size={14} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[13px] font-semibold text-slate-700 truncate group-hover:text-sky-600">{att.name}</div>
+                              <div className="text-[11px] text-slate-400">첨부파일</div>
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Checklists */}
+                  {cardDetails.checklists && cardDetails.checklists.length > 0 && (
+                    <div>
+                      {cardDetails.checklists.map((cl: any) => {
+                        const total = cl.checkItems.length;
+                        const completed = cl.checkItems.filter((i: any) => i.state === 'complete').length;
+                        const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+                        return (
+                          <div key={cl.id} className="mb-6 last:mb-0">
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-2"><CheckSquare size={16} /> {cl.name}</h3>
+                              <span className="text-[12px] font-bold text-slate-400">{percent}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-slate-200 rounded-full mb-3 overflow-hidden">
+                              <div className="h-full bg-sky-500 rounded-full transition-all duration-300" style={{ width: `${percent}%` }}></div>
+                            </div>
+                            <div className="space-y-1.5 bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+                              {cl.checkItems.map((item: any) => (
+                                <div key={item.id} className={`flex items-start gap-2.5 p-2 rounded hover:bg-slate-50 transition-colors ${item.state === 'complete' ? 'opacity-60' : ''}`}>
+                                  <input type="checkbox" checked={item.state === 'complete'} onChange={() => handleCheck(item.id, cardDetails.id, item.state)} className="mt-1 w-4 h-4 accent-sky-500 rounded cursor-pointer shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <p className={`text-[14px] leading-tight ${item.state === 'complete' ? 'line-through text-slate-400' : 'text-slate-700 font-medium'}`}>{item.name}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Comments */}
+                  <div>
+                    <h3 className="text-[15px] font-bold text-slate-700 flex items-center gap-2 mb-3"><MessageCircle size={16} /> 댓글</h3>
+                    <div className="flex flex-col gap-2 mb-4 relative">
+                      <textarea value={commentText} onChange={e => setCommentText(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddComment(); } }} className="w-full p-3 pr-12 text-[14px] border border-slate-200 rounded-xl bg-white focus:outline-none focus:border-sky-400 focus:ring-1 focus:ring-sky-400 resize-none shadow-sm" placeholder="여기에 댓글을 작성하세요..." rows={2} />
+                      <button onClick={handleAddComment} disabled={!commentText.trim()} className="absolute right-2 bottom-2 p-1.5 bg-sky-500 text-white rounded-lg hover:bg-sky-600 disabled:opacity-50 disabled:bg-slate-300 transition-colors"><Send size={16} /></button>
+                    </div>
+                    <div className="space-y-4">
+                      {cardDetails.actions?.filter((a: any) => a.type === 'commentCard').map((comment: any) => (
+                        <div key={comment.id} className="flex gap-3">
+                          <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-500 text-[13px] shrink-0 uppercase">{comment.memberCreator.fullName.charAt(0)}</div>
+                          <div className="flex-1 bg-white p-3 rounded-xl rounded-tl-none border border-slate-200 shadow-sm">
+                            <div className="flex items-center gap-2 mb-1"><span className="text-[13px] font-bold text-slate-700">{comment.memberCreator.fullName}</span><span className="text-[11px] text-slate-400">{getTimeAgo(comment.date)}</span></div>
+                            <p className="text-[14px] text-slate-600 whitespace-pre-wrap leading-relaxed">{comment.data.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                      {(!cardDetails.actions || cardDetails.actions.filter((a: any) => a.type === 'commentCard').length === 0) && <p className="text-[13px] text-slate-400 italic text-center py-4 bg-slate-100/50 rounded-xl border border-slate-200 border-dashed">아직 댓글이 없습니다.</p>}
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-slate-400">데이터를 불러오지 못했습니다.</div>
+            )}
           </div>
         </div>
       )}
